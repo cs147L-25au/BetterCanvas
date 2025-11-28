@@ -1,11 +1,10 @@
-import { Text } from "react-native";
-
+import { Calendar } from "@/components/Calendar";
 import { Screen } from "@/components/Screen";
 
 export default function CalendarScreen() {
   return (
     <Screen>
-      <Text>Calendar Screen</Text>
+      <Calendar />
     </Screen>
   );
 }
