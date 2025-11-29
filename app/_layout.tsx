@@ -5,11 +5,18 @@ export default function TabLayout() {
     <NativeTabs>
       <NativeTabs.Trigger name="index">
         <Label>Agenda</Label>
-        <Icon sf="house.fill" drawable="custom_android_drawable" />
+        <Icon
+          sf="list.bullet.below.rectangle"
+          drawable="custom_android_drawable"
+        />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="calendar">
         <Icon sf="calendar" drawable="custom_settings_drawable" />
         <Label>Calendar</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="courses">
+        <Label>My Courses</Label>
+        <Icon sf="rectangle.grid.3x2.fill" drawable="custom_android_drawable" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );
