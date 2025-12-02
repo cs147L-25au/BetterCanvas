@@ -1,4 +1,4 @@
-export type Json =
+type Json =
   | string
   | number
   | boolean
@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export interface Database {
+interface Database {
   public: {
     Tables: {
       courses: {
@@ -60,8 +60,7 @@ export interface Database {
 }
 
 // Helper types
-export type Course = Database["public"]["Tables"]["courses"]["Row"];
-export type Assignment = Database["public"]["Tables"]["assignments"]["Row"];
-export type CourseInsert = Database["public"]["Tables"]["courses"]["Insert"];
-export type AssignmentInsert =
-  Database["public"]["Tables"]["assignments"]["Insert"];
+type Course = Database["public"]["Tables"]["courses"]["Row"];
+type Assignment = Database["public"]["Tables"]["assignments"]["Row"];
+type CourseInsert = Database["public"]["Tables"]["courses"]["Insert"];
+type AssignmentInsert = Database["public"]["Tables"]["assignments"]["Insert"];
