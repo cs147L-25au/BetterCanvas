@@ -6,7 +6,7 @@ type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-interface Database {
+export interface Database {
   public: {
     Tables: {
       courses: {
