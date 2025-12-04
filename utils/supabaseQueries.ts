@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { colors } from "@/assets/Themes/colors";
 
 export type Assignment = {
   id: string;
@@ -6,6 +7,7 @@ export type Assignment = {
   due_date: string;
   estimated_duration: number;
   course_name: string;
+  course_color: string;
 };
 
 type SupabaseAssignmentReturn = {
@@ -37,14 +39,38 @@ export async function fetchAssignments(): Promise<Assignment[]> {
       throw new Error(error.message);
     }
 
+    // Assign colors to courses
+    const courseColorMap = new Map<string, string>();
+    let colorIndex = 0;
+    (data || []).forEach((item: SupabaseAssignmentReturn) => {
+      const courseName = item.course?.course_name || "Unknown Course";
+      if (!courseColorMap.has(courseName)) {
+        const assignedColor =
+          colors.classColors[colorIndex % colors.classColors.length];
+        courseColorMap.set(courseName, assignedColor);
+        colorIndex++;
+      }
+    });
+
     // Make data usable for Assignment type
-    return (data || []).map((item: SupabaseAssignmentReturn) => ({
-      id: item.id,
-      assignment_name: item.assignment_name,
-      due_date: item.due_date,
-      estimated_duration: item.estimated_duration,
-      course_name: item.course?.course_name || "Unknown Course",
-    }));
+    const result = (data || []).map((item: SupabaseAssignmentReturn) => {
+      const courseName = item.course?.course_name || "Unknown Course";
+      const courseColor = courseColorMap.get(courseName);
+      if (!courseColor) {
+        throw new Error(`No color assigned for course: ${courseName}`);
+      }
+
+      return {
+        id: item.id,
+        assignment_name: item.assignment_name,
+        due_date: item.due_date,
+        estimated_duration: item.estimated_duration,
+        course_name: courseName,
+        course_color: courseColor,
+      };
+    });
+
+    return result;
   } catch (err) {
     throw new Error("Failed to fetch assignments");
   }
