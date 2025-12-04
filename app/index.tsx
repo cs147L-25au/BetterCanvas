@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+
 import { Dimensions, ActivityIndicator, FlatList } from "react-native";
-import styled from "styled-components/native";
-import { Screen } from "@/components/Screen";
-import { AgendaItem } from "@/components/AgendaItem";
+import { styled } from "styled-components/native";
+
 import { colors } from "@/assets/Themes/colors";
+import { AgendaItem } from "@/components/AgendaItem";
+import { Screen } from "@/components/Screen";
 import { fetchAssignments, type Assignment } from "@/utils/supabaseQueries";
 
 const windowWidth = Dimensions.get("window").width;
@@ -33,19 +35,36 @@ export default function AgendaScreen() {
     loadAssignments();
   }, []);
 
-  // Create timeline for days without assignments
-  const createTimeline = () => {
+  // Format dates for gaps
+  const formatDateRange = (start: Date, end: Date): string => {
+    const startStr = start.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+    const endStr = end.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+
+    if (start.toDateString() === end.toDateString()) {
+      return `${startStr}`;
+    }
+    return `${startStr} - ${endStr}`;
+  };
+
+  // Memorize timeline to avoid recalculating on every render; rerender when assignments change
+  const timeline = useMemo(() => {
     if (assignments.length === 0) return [];
     const sorted = [...assignments].sort(
       (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
     );
 
-    const timeline: Array<{
+    const timeline: {
       type: "date" | "gap";
       label: string;
       assignments?: Assignment[];
       dateKey: string;
-    }> = [];
+    }[] = [];
 
     const today = new Date(new Date().setHours(0, 0, 0, 0));
     const startDate = new Date(
@@ -122,14 +141,8 @@ export default function AgendaScreen() {
         const gapEnd = new Date(currentDate);
         gapEnd.setDate(gapEnd.getDate() - 1);
         closeGap(gapEnd);
-
         addDateSection(currentDate, hasAssignments, isToday);
-
-        if (isToday && !hasAssignments) {
-          const nextDate = new Date(currentDate);
-          nextDate.setDate(nextDate.getDate() + 1);
-          gapStart = nextDate;
-        }
+        gapStart = null;
       } else if (!gapStart) {
         gapStart = new Date(currentDate);
       }
@@ -149,28 +162,6 @@ export default function AgendaScreen() {
     }
 
     return timeline;
-  };
-
-  // Format dates for gaps
-  const formatDateRange = (start: Date, end: Date): string => {
-    const startStr = start.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-    const endStr = end.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-
-    if (start.toDateString() === end.toDateString()) {
-      return `${startStr}`;
-    }
-    return `${startStr} - ${endStr}`;
-  };
-
-  // Memorize timeline to avoid recalculating on every render; rerender when assignments change
-  const timeline = useMemo(() => {
-    return createTimeline();
   }, [assignments]);
 
   // Find the index of today's date in the timeline
