@@ -7,6 +7,11 @@ import { colors } from "@/assets/Themes/colors";
 import { AgendaItem } from "@/components/AgendaItem";
 import { Screen } from "@/components/Screen";
 import { fetchAssignments, type Assignment } from "@/utils/supabaseQueries";
+import {
+  createTimeline,
+  findTodayIndex,
+  type TimelineItem,
+} from "@/utils/timelineUtils";
 
 const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
@@ -35,140 +40,11 @@ export default function AgendaScreen() {
     loadAssignments();
   }, []);
 
-  // Format dates for gaps
-  const formatDateRange = (start: Date, end: Date): string => {
-    const startStr = start.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-    const endStr = end.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-
-    if (start.toDateString() === end.toDateString()) {
-      return `${startStr}`;
-    }
-    return `${startStr} - ${endStr}`;
-  };
-
   // Memorize timeline to avoid recalculating on every render; rerender when assignments change
-  const timeline = useMemo(() => {
-    if (assignments.length === 0) return [];
-    const sorted = [...assignments].sort(
-      (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
-    );
-
-    const timeline: {
-      type: "date" | "gap";
-      label: string;
-      assignments?: Assignment[];
-      dateKey: string;
-    }[] = [];
-
-    const today = new Date(new Date().setHours(0, 0, 0, 0));
-    const startDate = new Date(
-      new Date(sorted[0].due_date).setHours(0, 0, 0, 0)
-    );
-
-    let firstDate;
-    if (startDate < today) {
-      firstDate = startDate;
-    } else {
-      firstDate = today;
-    }
-
-    let currentDate = new Date(firstDate);
-    const finalDate = new Date(
-      new Date(sorted[sorted.length - 1].due_date).setHours(0, 0, 0, 0)
-    );
-
-    // Group assignments by date
-    const assignmentsByDate: Record<string, Assignment[]> = {};
-    for (const assignment of sorted) {
-      const dateKey = new Date(assignment.due_date).toDateString();
-      if (!assignmentsByDate[dateKey]) {
-        assignmentsByDate[dateKey] = [];
-      }
-      assignmentsByDate[dateKey].push(assignment);
-    }
-
-    let gapStart: Date | null = null;
-    const todayKey = today.toDateString();
-
-    // Helper to add a date section to the timeline
-    const addDateSection = (
-      date: Date,
-      assignments?: Assignment[],
-      isToday = false
-    ) => {
-      let label = date.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-      });
-
-      if (isToday) {
-        label = "Today: " + label;
-      }
-
-      timeline.push({
-        type: "date",
-        label,
-        assignments,
-        dateKey: date.toDateString(),
-      });
-    };
-
-    // Closes gaps between assignments and add to timeline
-    const closeGap = (endDate: Date) => {
-      if (gapStart) {
-        timeline.push({
-          type: "gap",
-          label: formatDateRange(gapStart, endDate),
-          dateKey: `gap-${gapStart.getTime()}`,
-        });
-        gapStart = null;
-      }
-    };
-
-    while (currentDate <= finalDate) {
-      const dateKey = currentDate.toDateString();
-      const hasAssignments = assignmentsByDate[dateKey];
-      const isToday = dateKey === todayKey;
-
-      if (hasAssignments || isToday) {
-        const gapEnd = new Date(currentDate);
-        gapEnd.setDate(gapEnd.getDate() - 1);
-        closeGap(gapEnd);
-        addDateSection(currentDate, hasAssignments, isToday);
-        gapStart = null;
-      } else if (!gapStart) {
-        gapStart = new Date(currentDate);
-      }
-
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    // Close any remaining gap
-    if (gapStart) {
-      const gapEnd = new Date(currentDate);
-      gapEnd.setDate(gapEnd.getDate() - 1);
-      timeline.push({
-        type: "gap",
-        label: formatDateRange(gapStart, gapEnd),
-        dateKey: `gap-${gapStart.getTime()}`,
-      });
-    }
-
-    return timeline;
-  }, [assignments]);
+  const timeline = useMemo(() => createTimeline(assignments), [assignments]);
 
   // Find the index of today's date in the timeline
-  const todayIndex = useMemo(() => {
-    const todayKey = new Date().toDateString();
-    return timeline.findIndex((item) => item.dateKey === todayKey);
-  }, [timeline]);
+  const todayIndex = useMemo(() => findTodayIndex(timeline), [timeline]);
 
   // Scroll to today's date on load
   useEffect(() => {
@@ -186,7 +62,7 @@ export default function AgendaScreen() {
   }, [loading, todayIndex]);
 
   // Render a single timeline item
-  const renderItem = ({ item }: { item: (typeof timeline)[0] }) => {
+  const renderItem = ({ item }: { item: TimelineItem }) => {
     let assignmentContent;
     if (item.type === "date" && item.assignments) {
       assignmentContent = item.assignments.map((assignment) => (
@@ -233,9 +109,7 @@ export default function AgendaScreen() {
           data={timeline}
           renderItem={renderItem}
           keyExtractor={(item, index) => `${item.type}-${index}`}
-          initialNumToRender={50}
-          maxToRenderPerBatch={10}
-          windowSize={21}
+          windowSize={windowHeight / 20}
           onScrollToIndexFailed={(info) => {
             const wait = new Promise((resolve) => setTimeout(resolve, 500));
             wait.then(() => {
