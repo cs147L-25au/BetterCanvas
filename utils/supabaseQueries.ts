@@ -54,17 +54,14 @@ export async function fetchAssignments(): Promise<Assignment[]> {
 
     // Map data to Assignment type
     const result = (data || []).map((item: SupabaseAssignmentReturn) => {
-      const courseName = item.course?.course_name || "Unknown Course";
-      const courseColor = item.course?.course_color || colors.accentColor;
-
       return {
         id: item.id,
         assignment_name: item.assignment_name,
         due_date: item.due_date,
         estimated_duration: item.estimated_duration,
         course: {
-          course_name: courseName,
-          course_color: courseColor,
+          course_name: item.course?.course_name || "Unknown Course",
+          course_color: item.course?.course_color || colors.accentColor,
         },
       };
     });
