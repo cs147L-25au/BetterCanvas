@@ -58,9 +58,3 @@ export interface Database {
     };
   };
 }
-
-// Helper types
-type Course = Database["public"]["Tables"]["courses"]["Row"];
-type Assignment = Database["public"]["Tables"]["assignments"]["Row"];
-type CourseInsert = Database["public"]["Tables"]["courses"]["Insert"];
-type AssignmentInsert = Database["public"]["Tables"]["assignments"]["Insert"];
