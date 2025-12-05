@@ -21,7 +21,7 @@ export type Assignment = {
 //   estimated_duration: number;
 //   course: {
 //     course_name: string;
-//    course_color: string;
+//     course_color: string;
 //   } | null;
 // };
 
