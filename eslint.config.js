@@ -1,17 +1,29 @@
 // https://docs.expo.dev/guides/using-eslint/
-const { defineConfig } = require("eslint/config");
-const expoConfig = require("eslint-config-expo/flat");
-const eslintPluginPrettierRecommended = require("eslint-plugin-prettier/recommended");
+import { defineConfig } from "eslint/config";
 
-module.exports = defineConfig([
+import tseslint from "typescript-eslint";
+
+import eslint from "@eslint/js";
+import stylistic from "@stylistic/eslint-plugin";
+import expoConfig from "eslint-config-expo/flat.js";
+import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
+
+export default defineConfig([
   expoConfig,
   eslintPluginPrettierRecommended,
+  eslint.configs.recommended,
+  tseslint.configs.strict,
+  tseslint.configs.stylistic,
   {
+    plugins: {
+      "@stylistic": stylistic,
+    },
     rules: {
       "prettier/prettier": [
         "error",
         {
           endOfLine: "auto",
+          trailingComma: "all",
         },
       ],
       "import/order": [
@@ -24,6 +36,16 @@ module.exports = defineConfig([
               group: "external",
               position: "before",
             },
+            {
+              pattern: "eslint/config",
+              group: "external",
+              position: "before",
+            },
+            {
+              pattern: "typescript-eslint",
+              group: "external",
+              position: "before",
+            },
           ],
           pathGroupsExcludedImportTypes: ["react"],
           "newlines-between": "always",
@@ -33,6 +55,17 @@ module.exports = defineConfig([
           },
         },
       ],
+      curly: ["error", "all"],
+      "padding-line-between-statements": [
+        "error",
+        {
+          blankLine: "always",
+          prev: "block-like",
+          next: "return",
+        },
+      ],
+      "@typescript-eslint/consistent-type-definitions": ["off"],
+      "@typescript-eslint/no-non-null-assertion": "error",
     },
     ignores: ["dist/*"],
   },
