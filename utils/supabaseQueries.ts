@@ -21,6 +21,7 @@ export type Assignment = {
 //   estimated_duration: number;
 //   course: {
 //     course_name: string;
+//    course_color: string;
 //   } | null;
 // };
 
@@ -43,7 +44,7 @@ export async function fetchAssignments(): Promise<Assignment[]> {
         due_date,
         estimated_duration,
         course:courses(course_name, course_color)
-      `
+      `,
       )
       .order("due_date", { ascending: true });
 
