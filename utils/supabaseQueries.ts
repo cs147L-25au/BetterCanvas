@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { colors } from "@/assets/Themes/colors";
+import type { Database } from "@/types/database";
 
 export type Assignment = {
   id: string;
@@ -12,15 +13,24 @@ export type Assignment = {
   };
 };
 
-type SupabaseAssignmentReturn = {
-  id: string;
-  assignment_name: string;
-  due_date: string;
-  estimated_duration: number;
-  course: {
-    course_name: string;
-  } | null;
-};
+// Return type:
+// type SupabaseAssignmentReturn = {
+//   id: string;
+//   assignment_name: string;
+//   due_date: string;
+//   estimated_duration: number;
+//   course: {
+//     course_name: string;
+//   } | null;
+// };
+
+type SupabaseAssignmentReturn =
+  Database["public"]["Tables"]["assignments"]["Row"] & {
+    course: Pick<
+      Database["public"]["Tables"]["courses"]["Row"],
+      "course_name"
+    > | null;
+  };
 
 export async function fetchAssignments(): Promise<Assignment[]> {
   try {
