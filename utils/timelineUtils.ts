@@ -12,7 +12,7 @@ export function createTimeline(assignments: Assignment[]): TimelineItem[] {
   if (assignments.length === 0) return [];
 
   const sorted = [...assignments].sort(
-    (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+    (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
   );
 
   // Group assignments by date

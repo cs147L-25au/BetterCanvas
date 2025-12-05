@@ -32,6 +32,7 @@ function AgendaContent() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Current topmost agenda item on the screen
   const [currentTopDateLabel, setCurrentTopDateLabel] = useState<string | null>(
     null,
   );
@@ -76,10 +77,14 @@ function AgendaContent() {
 
   // Find the index of currentTopDateLabel in the timeline
   const displayStartIndex = useMemo(() => {
-    if (currentTopDateLabel === null) return null;
+    if (currentTopDateLabel === null) {
+      return null;
+    }
+
     const index = fullTimeline.findIndex(
       (item) => item.label === currentTopDateLabel,
     );
+
     return index >= 0 ? index : 0;
   }, [fullTimeline, currentTopDateLabel]);
 
@@ -93,14 +98,20 @@ function AgendaContent() {
   }, [fullTimeline, displayStartIndex]);
 
   // Handle scrolling to the top to load more past assignments
+  // This enables lazy loading where we initially show day + future, and loads more past dates on scroll up
   const handleStartReached = () => {
+    // Only load if we're not already at the very beginning
     if (displayStartIndex !== null && displayStartIndex > 0) {
+      // Calculate the new start position (7 dates earlier, but not before index 0)
       const newStartIndex = Math.max(
         0,
         displayStartIndex - ASSIGNMENTS_BATCH_SIZE,
       );
 
-      // Update the top date label to new starting date
+      // Update currentTopDateLabel to the new date, which will trigger:
+      // 1. displayStartIndex recalculation finds new index for the date
+      // 2. displayedTimeline re-slice to includes more past dates
+      // 3. FlatList re-render with maintainVisibleContentPosition
       if (fullTimeline[newStartIndex]) {
         setCurrentTopDateLabel(fullTimeline[newStartIndex].label);
       }
