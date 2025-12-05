@@ -63,27 +63,18 @@ export default function AgendaScreen() {
 
   // Render a single timeline item
   const renderItem = ({ item }: { item: TimelineItem }) => {
-    let assignmentContent;
-    if (item.type === "date" && item.assignments) {
-      assignmentContent = item.assignments.map((assignment) => (
-        <AgendaItem
-          key={assignment.id}
-          assignmentName={assignment.assignment_name}
-          courseName={assignment.course.course_name}
-          dueDate={assignment.due_date}
-          courseColor={assignment.course.course_color}
-        />
-      ));
-    } else {
-      assignmentContent = (
-        <NoAssignmentsText>No assignments due</NoAssignmentsText>
-      );
-    }
-
     return (
       <DateSection>
         <DateHeader>{item.label}</DateHeader>
-        {assignmentContent}
+        {item.assignments.map((assignment) => (
+          <AgendaItem
+            key={assignment.id}
+            assignmentName={assignment.assignment_name}
+            courseName={assignment.course.course_name}
+            dueDate={assignment.due_date}
+            courseColor={assignment.course.course_color}
+          />
+        ))}
       </DateSection>
     );
   };
@@ -161,12 +152,4 @@ const DateHeader = styled.Text`
   color: ${colors.textPrimary};
   margin-bottom: ${windowHeight * 0.015}px;
   padding-left: ${windowWidth * 0.01}px;
-`;
-
-const NoAssignmentsText = styled.Text`
-  font-size: ${windowWidth * 0.04}px;
-  color: ${colors.textSecondary};
-  font-style: italic;
-  padding: ${windowHeight * 0.02}px;
-  text-align: center;
 `;

@@ -1,51 +1,18 @@
 import type { Assignment } from "./supabaseQueries";
 
 export interface TimelineItem {
-  type: "date" | "gap";
+  type: "date";
   label: string;
-  assignments?: Assignment[];
+  assignments: Assignment[];
   dateKey: string;
 }
 
-// Formats a date range
-export function formatDateRange(start: Date, end: Date): string {
-  const startStr = start.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-  const endStr = end.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-
-  if (start.toDateString() === end.toDateString()) {
-    return `${startStr}`;
-  }
-  return `${startStr} - ${endStr}`;
-}
-
-// Creates a timeline from assignments, including date sections and gaps
+// Creates a timeline from assignments
 export function createTimeline(assignments: Assignment[]): TimelineItem[] {
   if (assignments.length === 0) return [];
 
   const sorted = [...assignments].sort(
     (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
-  );
-
-  const timeline: TimelineItem[] = [];
-  const today = new Date(new Date().setHours(0, 0, 0, 0));
-  const startDate = new Date(new Date(sorted[0].due_date).setHours(0, 0, 0, 0));
-
-  let firstDate;
-  if (startDate < today) {
-    firstDate = startDate;
-  } else {
-    firstDate = today;
-  }
-
-  let currentDate = new Date(firstDate);
-  const finalDate = new Date(
-    new Date(sorted[sorted.length - 1].due_date).setHours(0, 0, 0, 0)
   );
 
   // Group assignments by date
@@ -58,79 +25,44 @@ export function createTimeline(assignments: Assignment[]): TimelineItem[] {
     assignmentsByDate[dateKey].push(assignment);
   }
 
-  let gapStart: Date | null = null;
-  const todayKey = today.toDateString();
+  const timeline: TimelineItem[] = [];
 
-  // Helper to add a date section to the timeline
-  const addDateSection = (
-    date: Date,
-    assignments?: Assignment[],
-    isToday = false
-  ) => {
+  // Create timeline items only for dates with assignments
+  for (const [dateKey, assignments] of Object.entries(assignmentsByDate)) {
+    const date = new Date(dateKey);
     let label = date.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
     });
 
-    if (isToday) {
-      label = "Today: " + label;
-    }
-
     timeline.push({
       type: "date",
       label,
       assignments,
-      dateKey: date.toDateString(),
-    });
-  };
-
-  // Closes gaps between assignments and add to timeline
-  const closeGap = (endDate: Date) => {
-    if (gapStart) {
-      timeline.push({
-        type: "gap",
-        label: formatDateRange(gapStart, endDate),
-        dateKey: `gap-${gapStart.getTime()}`,
-      });
-      gapStart = null;
-    }
-  };
-
-  while (currentDate <= finalDate) {
-    const dateKey = currentDate.toDateString();
-    const hasAssignments = assignmentsByDate[dateKey];
-    const isToday = dateKey === todayKey;
-
-    if (hasAssignments || isToday) {
-      const gapEnd = new Date(currentDate);
-      gapEnd.setDate(gapEnd.getDate() - 1);
-      closeGap(gapEnd);
-      addDateSection(currentDate, hasAssignments, isToday);
-      gapStart = null;
-    } else if (!gapStart) {
-      gapStart = new Date(currentDate);
-    }
-
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-
-  // Close any remaining gap
-  if (gapStart) {
-    const gapEnd = new Date(currentDate);
-    gapEnd.setDate(gapEnd.getDate() - 1);
-    timeline.push({
-      type: "gap",
-      label: formatDateRange(gapStart, gapEnd),
-      dateKey: `gap-${gapStart.getTime()}`,
+      dateKey,
     });
   }
 
   return timeline;
 }
 
-// Finds the index of today's date in the timeline
+// Finds the index to scroll to
 export function findTodayIndex(timeline: TimelineItem[]): number {
-  const todayKey = new Date().toDateString();
-  return timeline.findIndex((item) => item.dateKey === todayKey);
+  if (timeline.length === 0) return -1;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayKey = today.toDateString();
+  const todayIndex = timeline.findIndex((item) => item.dateKey === todayKey);
+  if (todayIndex !== -1) return todayIndex;
+
+  // Find the first assignment due today or later
+  const upcomingIndex = timeline.findIndex((item) => {
+    const itemDate = new Date(item.dateKey);
+    return itemDate >= today;
+  });
+
+  // Return upcoming index if found, otherwise return 0 (start of list)
+  return upcomingIndex !== -1 ? upcomingIndex : 0;
 }
