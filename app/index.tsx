@@ -15,6 +15,7 @@ import {
 
 const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
+const assignmentBatchSize = 7; // Load 7 past assignment dates at a time
 
 export default function AgendaScreen() {
   return (
@@ -31,6 +32,9 @@ function AgendaContent() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentTopDateLabel, setCurrentTopDateLabel] = useState<string | null>(
+    null
+  );
   const flatListRef = useRef<FlatList>(null);
 
   // Fetch assignments
@@ -52,26 +56,57 @@ function AgendaContent() {
   }, []);
 
   // Memorize timeline to avoid recalculating on every render; rerender when assignments change
-  const timeline = useMemo(() => createTimeline(assignments), [assignments]);
+  const fullTimeline = useMemo(
+    () => createTimeline(assignments),
+    [assignments]
+  );
 
   // Find the index of today's date in the timeline
-  const todayIndex = useMemo(() => findTodayIndex(timeline), [timeline]);
+  const todayIndex = useMemo(
+    () => findTodayIndex(fullTimeline),
+    [fullTimeline]
+  );
 
-  // Scroll to today's date on load
-  // TODO (hannah): use onStartReached prop instead
+  // Initialize to start at today's date
   useEffect(() => {
-    if (!loading && todayIndex >= 0 && flatListRef.current) {
-      const scrollTimer = setTimeout(() => {
-        flatListRef.current?.scrollToIndex({
-          index: todayIndex,
-          animated: true,
-          viewPosition: 0,
-        });
-      }, 300);
-
-      return () => clearTimeout(scrollTimer);
+    if (!loading && todayIndex >= 0 && fullTimeline[todayIndex]) {
+      setCurrentTopDateLabel(fullTimeline[todayIndex].label);
     }
-  }, [loading, todayIndex]);
+  }, [loading, todayIndex, fullTimeline]);
+
+  // Find the index of currentTopDateLabel in the timeline
+  const displayStartIndex = useMemo(() => {
+    if (currentTopDateLabel === null) return null;
+    const index = fullTimeline.findIndex(
+      (item) => item.label === currentTopDateLabel
+    );
+    return index >= 0 ? index : 0;
+  }, [fullTimeline, currentTopDateLabel]);
+
+  // Timeline slice to display
+  const displayedTimeline = useMemo(() => {
+    if (displayStartIndex === null || displayStartIndex === 0) {
+      return fullTimeline;
+    }
+
+    return fullTimeline.slice(displayStartIndex);
+  }, [fullTimeline, displayStartIndex]);
+
+  // Handle scrolling to the top to load more past assignments
+  const handleStartReached = () => {
+    if (displayStartIndex !== null && displayStartIndex > 0) {
+      const newStartIndex = Math.max(
+        0,
+        displayStartIndex - assignmentBatchSize
+      );
+
+      // Update the top date label to new starting date
+      if (fullTimeline[newStartIndex]) {
+        setCurrentTopDateLabel(fullTimeline[newStartIndex].label);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <ActivityIndicator
@@ -86,22 +121,22 @@ function AgendaContent() {
     return <ErrorText>An error has occurred: {error}</ErrorText>;
   }
 
+  // Wait for initialization
+  if (displayStartIndex === null) {
+    return null;
+  }
+
   return (
     <FlatList
       ref={flatListRef}
-      data={timeline}
+      data={displayedTimeline}
       renderItem={({ item }) => <TimelineSection item={item} />}
-      keyExtractor={(item, index) => `${item.type}-${index}`}
+      keyExtractor={(item) => item.label}
       windowSize={windowHeight / 20}
-      onScrollToIndexFailed={(info) => {
-        const wait = new Promise((resolve) => setTimeout(resolve, 500));
-        wait.then(() => {
-          flatListRef.current?.scrollToIndex({
-            index: info.index,
-            animated: true,
-            viewPosition: 0,
-          });
-        });
+      onStartReached={handleStartReached}
+      onStartReachedThreshold={0.5}
+      maintainVisibleContentPosition={{
+        minIndexForVisible: 0,
       }}
       contentContainerStyle={{
         paddingHorizontal: windowHeight * 0.02,
