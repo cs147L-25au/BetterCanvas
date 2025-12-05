@@ -47,6 +47,7 @@ export default function AgendaScreen() {
   const todayIndex = useMemo(() => findTodayIndex(timeline), [timeline]);
 
   // Scroll to today's date on load
+  // TODO (hannah): use onStartReached prop instead
   useEffect(() => {
     if (!loading && todayIndex >= 0 && flatListRef.current) {
       const scrollTimer = setTimeout(() => {
