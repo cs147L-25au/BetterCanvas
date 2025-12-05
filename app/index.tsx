@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
-import { Dimensions, ActivityIndicator, FlatList } from "react-native";
+import { ActivityIndicator, Dimensions, FlatList } from "react-native";
 import { styled } from "styled-components/native";
 
 import { colors } from "@/assets/Themes/colors";
@@ -33,7 +33,7 @@ function AgendaContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentTopDateLabel, setCurrentTopDateLabel] = useState<string | null>(
-    null
+    null,
   );
   const flatListRef = useRef<FlatList>(null);
 
@@ -58,13 +58,13 @@ function AgendaContent() {
   // Memorize timeline to avoid recalculating on every render; rerender when assignments change
   const fullTimeline = useMemo(
     () => createTimeline(assignments),
-    [assignments]
+    [assignments],
   );
 
   // Find the index of today's date in the timeline
   const todayIndex = useMemo(
     () => findTodayIndex(fullTimeline),
-    [fullTimeline]
+    [fullTimeline],
   );
 
   // Initialize to start at today's date
@@ -78,7 +78,7 @@ function AgendaContent() {
   const displayStartIndex = useMemo(() => {
     if (currentTopDateLabel === null) return null;
     const index = fullTimeline.findIndex(
-      (item) => item.label === currentTopDateLabel
+      (item) => item.label === currentTopDateLabel,
     );
     return index >= 0 ? index : 0;
   }, [fullTimeline, currentTopDateLabel]);
@@ -97,7 +97,7 @@ function AgendaContent() {
     if (displayStartIndex !== null && displayStartIndex > 0) {
       const newStartIndex = Math.max(
         0,
-        displayStartIndex - assignmentBatchSize
+        displayStartIndex - assignmentBatchSize,
       );
 
       // Update the top date label to new starting date
