@@ -71,40 +71,68 @@ export default function AgendaScreen() {
       <Header>
         <HeaderText>My Assignments</HeaderText>
       </Header>
-      {loading && (
-        <ActivityIndicator
-          size="large"
-          color={colors.accentColor}
-          style={{ marginTop: 50 }}
-        />
-      )}
-
-      {error && <ErrorText>An error has occurred: {error}</ErrorText>}
-
-      {!loading && !error && (
-        <FlatList
-          ref={flatListRef}
-          data={timeline}
-          renderItem={renderItem}
-          keyExtractor={(item, index) => `${item.type}-${index}`}
-          windowSize={windowHeight / 20}
-          onScrollToIndexFailed={(info) => {
-            const wait = new Promise((resolve) => setTimeout(resolve, 500));
-            wait.then(() => {
-              flatListRef.current?.scrollToIndex({
-                index: info.index,
-                animated: true,
-                viewPosition: 0,
-              });
-            });
-          }}
-          contentContainerStyle={{
-            paddingHorizontal: windowHeight * 0.02,
-            paddingBottom: windowHeight * 0.02,
-          }}
-        />
-      )}
+      <AgendaContent
+        loading={loading}
+        error={error}
+        timeline={timeline}
+        flatListRef={flatListRef}
+        renderItem={renderItem}
+      />
     </Screen>
+  );
+}
+
+type AgendaContentProps = {
+  loading: boolean;
+  error: string | null;
+  timeline: TimelineItem[];
+  flatListRef: React.RefObject<FlatList | null>;
+  renderItem: ({ item }: { item: TimelineItem }) => React.JSX.Element;
+};
+
+function AgendaContent({
+  loading,
+  error,
+  timeline,
+  flatListRef,
+  renderItem,
+}: AgendaContentProps) {
+  if (loading) {
+    return (
+      <ActivityIndicator
+        size="large"
+        color={colors.accentColor}
+        style={{ marginTop: 50 }}
+      />
+    );
+  }
+
+  if (error) {
+    return <ErrorText>An error has occurred: {error}</ErrorText>;
+  }
+
+  return (
+    <FlatList
+      ref={flatListRef}
+      data={timeline}
+      renderItem={renderItem}
+      keyExtractor={(item, index) => `${item.type}-${index}`}
+      windowSize={windowHeight / 20}
+      onScrollToIndexFailed={(info) => {
+        const wait = new Promise((resolve) => setTimeout(resolve, 500));
+        wait.then(() => {
+          flatListRef.current?.scrollToIndex({
+            index: info.index,
+            animated: true,
+            viewPosition: 0,
+          });
+        });
+      }}
+      contentContainerStyle={{
+        paddingHorizontal: windowHeight * 0.02,
+        paddingBottom: windowHeight * 0.02,
+      }}
+    />
   );
 }
 
