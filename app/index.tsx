@@ -17,6 +17,17 @@ const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
 
 export default function AgendaScreen() {
+  return (
+    <Screen>
+      <Header>
+        <HeaderText>My Assignments</HeaderText>
+      </Header>
+      <AgendaContent />
+    </Screen>
+  );
+}
+
+function AgendaContent() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,35 +72,6 @@ export default function AgendaScreen() {
       return () => clearTimeout(scrollTimer);
     }
   }, [loading, todayIndex]);
-
-  return (
-    <Screen>
-      <Header>
-        <HeaderText>My Assignments</HeaderText>
-      </Header>
-      <AgendaContent
-        loading={loading}
-        error={error}
-        timeline={timeline}
-        flatListRef={flatListRef}
-      />
-    </Screen>
-  );
-}
-
-type AgendaContentProps = {
-  loading: boolean;
-  error: string | null;
-  timeline: TimelineItem[];
-  flatListRef: React.RefObject<FlatList | null>;
-};
-
-function AgendaContent({
-  loading,
-  error,
-  timeline,
-  flatListRef,
-}: AgendaContentProps) {
   if (loading) {
     return (
       <ActivityIndicator
