@@ -62,11 +62,6 @@ export default function AgendaScreen() {
     }
   }, [loading, todayIndex]);
 
-  // Render a single timeline item
-  const renderItem = ({ item }: { item: TimelineItem }) => (
-    <TimelineSection item={item} />
-  );
-
   return (
     <Screen>
       <Header>
@@ -77,7 +72,6 @@ export default function AgendaScreen() {
         error={error}
         timeline={timeline}
         flatListRef={flatListRef}
-        renderItem={renderItem}
       />
     </Screen>
   );
@@ -88,7 +82,6 @@ type AgendaContentProps = {
   error: string | null;
   timeline: TimelineItem[];
   flatListRef: React.RefObject<FlatList | null>;
-  renderItem: ({ item }: { item: TimelineItem }) => React.JSX.Element;
 };
 
 function AgendaContent({
@@ -96,7 +89,6 @@ function AgendaContent({
   error,
   timeline,
   flatListRef,
-  renderItem,
 }: AgendaContentProps) {
   if (loading) {
     return (
@@ -116,7 +108,7 @@ function AgendaContent({
     <FlatList
       ref={flatListRef}
       data={timeline}
-      renderItem={renderItem}
+      renderItem={({ item }) => <TimelineSection item={item} />}
       keyExtractor={(item, index) => `${item.type}-${index}`}
       windowSize={windowHeight / 20}
       onScrollToIndexFailed={(info) => {
