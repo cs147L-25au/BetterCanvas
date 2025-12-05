@@ -8,6 +8,12 @@ module.exports = defineConfig([
   eslintPluginPrettierRecommended,
   {
     rules: {
+      "prettier/prettier": [
+        "error",
+        {
+          endOfLine: "auto",
+        },
+      ],
       "import/order": [
         "error",
         {
