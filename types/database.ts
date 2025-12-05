@@ -14,18 +14,21 @@ export interface Database {
           id: string;
           course_number: string;
           course_name: string;
+          course_color: string;
           created_at: string;
         };
         Insert: {
           id?: string;
           course_number: string;
           course_name: string;
+          course_color?: string;
           created_at?: string;
         };
         Update: {
           id?: string;
           course_number?: string;
           course_name?: string;
+          course_color?: string;
           created_at?: string;
         };
       };

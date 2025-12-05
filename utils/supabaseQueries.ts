@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
-import { colors } from "@/assets/Themes/colors";
 import type { Database } from "@/types/database";
+import { colors } from "@/assets/Themes/colors";
 
 export type Assignment = {
   id: string;
@@ -28,7 +28,7 @@ type SupabaseAssignmentReturn =
   Database["public"]["Tables"]["assignments"]["Row"] & {
     course: Pick<
       Database["public"]["Tables"]["courses"]["Row"],
-      "course_name"
+      "course_name" | "course_color"
     > | null;
   };
 
@@ -42,7 +42,7 @@ export async function fetchAssignments(): Promise<Assignment[]> {
         assignment_name,
         due_date,
         estimated_duration,
-        course:courses(course_name)
+        course:courses(course_name, course_color)
       `
       )
       .order("due_date", { ascending: true });
@@ -51,26 +51,10 @@ export async function fetchAssignments(): Promise<Assignment[]> {
       throw new Error(error.message);
     }
 
-    // Assign colors to courses
-    const courseColorMap = new Map<string, string>();
-    let colorIndex = 0;
-    (data || []).forEach((item: SupabaseAssignmentReturn) => {
-      const courseName = item.course?.course_name || "Unknown Course";
-      if (!courseColorMap.has(courseName)) {
-        const assignedColor =
-          colors.classColors[colorIndex % colors.classColors.length];
-        courseColorMap.set(courseName, assignedColor);
-        colorIndex++;
-      }
-    });
-
-    // Make data usable for Assignment type
+    // Map data to Assignment type
     const result = (data || []).map((item: SupabaseAssignmentReturn) => {
       const courseName = item.course?.course_name || "Unknown Course";
-      const courseColor = courseColorMap.get(courseName);
-      if (!courseColor) {
-        throw new Error(`No color assigned for course: ${courseName}`);
-      }
+      const courseColor = item.course?.course_color || colors.accentColor;
 
       return {
         id: item.id,
