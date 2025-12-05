@@ -107,7 +107,7 @@ function AgendaContent() {
     }
   };
 
-  if (loading) {
+  if (loading || displayStartIndex === null) {
     return (
       <ActivityIndicator
         size="large"
@@ -119,11 +119,6 @@ function AgendaContent() {
 
   if (error) {
     return <ErrorText>An error has occurred: {error}</ErrorText>;
-  }
-
-  // Wait for initialization
-  if (displayStartIndex === null) {
-    return null;
   }
 
   return (
