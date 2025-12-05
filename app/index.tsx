@@ -62,22 +62,9 @@ export default function AgendaScreen() {
   }, [loading, todayIndex]);
 
   // Render a single timeline item
-  const renderItem = ({ item }: { item: TimelineItem }) => {
-    return (
-      <DateSection>
-        <DateHeader>{item.label}</DateHeader>
-        {item.assignments.map((assignment) => (
-          <AgendaItem
-            key={assignment.id}
-            assignmentName={assignment.assignment_name}
-            courseName={assignment.course.course_name}
-            dueDate={assignment.due_date}
-            courseColor={assignment.course.course_color}
-          />
-        ))}
-      </DateSection>
-    );
-  };
+  const renderItem = ({ item }: { item: TimelineItem }) => (
+    <TimelineSection item={item} />
+  );
 
   return (
     <Screen>
@@ -118,6 +105,23 @@ export default function AgendaScreen() {
         />
       )}
     </Screen>
+  );
+}
+
+function TimelineSection({ item }: { item: TimelineItem }) {
+  return (
+    <DateSection>
+      <DateHeader>{item.label}</DateHeader>
+      {item.assignments.map((assignment) => (
+        <AgendaItem
+          key={assignment.id}
+          assignmentName={assignment.assignment_name}
+          courseName={assignment.course.course_name}
+          dueDate={assignment.due_date}
+          courseColor={assignment.course.course_color}
+        />
+      ))}
+    </DateSection>
   );
 }
 
