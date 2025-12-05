@@ -69,9 +69,9 @@ export default function AgendaScreen() {
         <AgendaItem
           key={assignment.id}
           assignmentName={assignment.assignment_name}
-          courseName={assignment.course_name}
+          courseName={assignment.course.course_name}
           dueDate={assignment.due_date}
-          courseColor={assignment.course_color}
+          courseColor={assignment.course.course_color}
         />
       ));
     } else {

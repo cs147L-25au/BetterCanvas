@@ -6,8 +6,10 @@ export type Assignment = {
   assignment_name: string;
   due_date: string;
   estimated_duration: number;
-  course_name: string;
-  course_color: string;
+  course: {
+    course_name: string;
+    course_color: string;
+  };
 };
 
 type SupabaseAssignmentReturn = {
@@ -65,8 +67,10 @@ export async function fetchAssignments(): Promise<Assignment[]> {
         assignment_name: item.assignment_name,
         due_date: item.due_date,
         estimated_duration: item.estimated_duration,
-        course_name: courseName,
-        course_color: courseColor,
+        course: {
+          course_name: courseName,
+          course_color: courseColor,
+        },
       };
     });
 
