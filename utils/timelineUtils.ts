@@ -7,30 +7,44 @@ export interface TimelineItem {
   dateKey: string;
 }
 
-// Creates a timeline from assignments
-export function createTimeline(assignments: Assignment[]): TimelineItem[] {
-  if (assignments.length === 0) return [];
-
-  const sorted = [...assignments].sort(
-    (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
+// Sorts assignments by due date in ascending order
+function sortByDate(assignments: Assignment[]): Assignment[] {
+  return [...assignments].sort(
+    (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
   );
+}
 
-  // Group assignments by date
+// Groups assignments by their date
+function groupByDate(assignments: Assignment[]): Record<string, Assignment[]> {
   const assignmentsByDate: Record<string, Assignment[]> = {};
-  for (const assignment of sorted) {
-    const dateKey = new Date(assignment.due_date).toDateString();
+
+  for (const assignment of assignments) {
+    const dateKey = new Date(assignment.dueDate).toDateString();
     if (!assignmentsByDate[dateKey]) {
       assignmentsByDate[dateKey] = [];
     }
     assignmentsByDate[dateKey].push(assignment);
   }
 
+  return assignmentsByDate;
+}
+
+// Creates a timeline from assignments, showing only dates with assignments
+export function createTimeline(assignments: Assignment[]): TimelineItem[] {
+  // No-op if no assignments, return empty array
+  if (assignments.length === 0) {
+    return [];
+  }
+
+  const assgnsSortedByDate = sortByDate(assignments);
+  const assgnsGroupedByDate = groupByDate(assgnsSortedByDate);
+
   const timeline: TimelineItem[] = [];
 
-  // Create timeline items only for dates with assignments
-  for (const [dateKey, assignments] of Object.entries(assignmentsByDate)) {
+  // Build timeline items for dates with assignments
+  for (const [dateKey, assignments] of Object.entries(assgnsGroupedByDate)) {
     const date = new Date(dateKey);
-    let label = date.toLocaleDateString("en-US", {
+    const label = date.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
@@ -48,7 +62,7 @@ export function createTimeline(assignments: Assignment[]): TimelineItem[] {
 }
 
 // Finds the index to scroll to
-export function findTodayIndex(timeline: TimelineItem[]): number {
+export function findNearestAssgnIdx(timeline: TimelineItem[]): number {
   if (timeline.length === 0) return -1;
 
   const today = new Date();

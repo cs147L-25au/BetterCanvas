@@ -4,12 +4,12 @@ import type { Database } from "@/types/database";
 
 export type Assignment = {
   id: string;
-  assignment_name: string;
-  due_date: string;
-  estimated_duration: number;
+  assignmentName: string;
+  dueDate: string;
+  estimatedDuration: number;
   course: {
-    course_name: string;
-    course_color: string;
+    courseName: string;
+    courseColor: string;
   };
 };
 
@@ -56,12 +56,12 @@ export async function fetchAssignments(): Promise<Assignment[]> {
     const result = (data || []).map((item: SupabaseAssignmentReturn) => {
       return {
         id: item.id,
-        assignment_name: item.assignment_name,
-        due_date: item.due_date,
-        estimated_duration: item.estimated_duration,
+        assignmentName: item.assignment_name,
+        dueDate: item.due_date,
+        estimatedDuration: item.estimated_duration,
         course: {
-          course_name: item.course?.course_name || "Unknown Course",
-          course_color: item.course?.course_color || colors.accentColor,
+          courseName: item.course?.course_name || "Unknown Course",
+          courseColor: item.course?.course_color || colors.accentColor,
         },
       };
     });

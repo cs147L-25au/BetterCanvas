@@ -9,7 +9,7 @@ import { Screen } from "@/components/Screen";
 import { fetchAssignments, type Assignment } from "@/utils/supabaseQueries";
 import {
   createTimeline,
-  findTodayIndex,
+  findNearestAssgnIdx,
   type TimelineItem,
 } from "@/utils/timelineUtils";
 
@@ -63,17 +63,17 @@ function AgendaContent() {
   );
 
   // Find the index of today's date in the timeline
-  const todayIndex = useMemo(
-    () => findTodayIndex(fullTimeline),
+  const nearestAssgnIdx = useMemo(
+    () => findNearestAssgnIdx(fullTimeline),
     [fullTimeline],
   );
 
-  // Initialize to start at today's date
+  // Initialize to start at nearest assignment index (today or nearest future assignment)
   useEffect(() => {
-    if (!loading && todayIndex >= 0 && fullTimeline[todayIndex]) {
-      setCurrentTopDateLabel(fullTimeline[todayIndex].label);
+    if (!loading && nearestAssgnIdx >= 0 && fullTimeline[nearestAssgnIdx]) {
+      setCurrentTopDateLabel(fullTimeline[nearestAssgnIdx].label);
     }
-  }, [loading, todayIndex, fullTimeline]);
+  }, [loading, nearestAssgnIdx, fullTimeline]);
 
   // Find the index of currentTopDateLabel in the timeline
   const displayStartIndex = useMemo(() => {
@@ -159,10 +159,10 @@ function TimelineSection({ item }: { item: TimelineItem }) {
       {item.assignments.map((assignment) => (
         <AgendaItem
           key={assignment.id}
-          assignmentName={assignment.assignment_name}
-          courseName={assignment.course.course_name}
-          dueDate={assignment.due_date}
-          courseColor={assignment.course.course_color}
+          assignmentName={assignment.assignmentName}
+          courseName={assignment.course.courseName}
+          dueDate={assignment.dueDate}
+          courseColor={assignment.course.courseColor}
         />
       ))}
     </DateSection>
