@@ -15,7 +15,7 @@ import {
 
 const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
-const assignmentBatchSize = 7; // Load 7 past assignment dates at a time
+const ASSIGNMENTS_BATCH_SIZE = 7; // Load 7 past assignment dates at a time
 
 export default function AgendaScreen() {
   return (
@@ -97,7 +97,7 @@ function AgendaContent() {
     if (displayStartIndex !== null && displayStartIndex > 0) {
       const newStartIndex = Math.max(
         0,
-        displayStartIndex - assignmentBatchSize,
+        displayStartIndex - ASSIGNMENTS_BATCH_SIZE,
       );
 
       // Update the top date label to new starting date
