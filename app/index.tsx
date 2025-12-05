@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
-import { Dimensions, ActivityIndicator, FlatList } from "react-native";
+import { ActivityIndicator, Dimensions, FlatList } from "react-native";
 import { styled } from "styled-components/native";
 
 import { colors } from "@/assets/Themes/colors";
@@ -9,17 +9,33 @@ import { Screen } from "@/components/Screen";
 import { fetchAssignments, type Assignment } from "@/utils/supabaseQueries";
 import {
   createTimeline,
-  findTodayIndex,
+  findNearestAssgnIdx,
   type TimelineItem,
 } from "@/utils/timelineUtils";
 
 const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
+const ASSIGNMENTS_BATCH_SIZE = 7; // Load 7 past assignment dates at a time
 
 export default function AgendaScreen() {
+  return (
+    <Screen>
+      <Header>
+        <HeaderText>My Assignments</HeaderText>
+      </Header>
+      <AgendaContent />
+    </Screen>
+  );
+}
+
+function AgendaContent() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Current topmost agenda item on the screen
+  const [currentTopDateLabel, setCurrentTopDateLabel] = useState<string | null>(
+    null,
+  );
   const flatListRef = useRef<FlatList>(null);
 
   // Fetch assignments
@@ -41,56 +57,68 @@ export default function AgendaScreen() {
   }, []);
 
   // Memorize timeline to avoid recalculating on every render; rerender when assignments change
-  const timeline = useMemo(() => createTimeline(assignments), [assignments]);
+  const fullTimeline = useMemo(
+    () => createTimeline(assignments),
+    [assignments],
+  );
 
   // Find the index of today's date in the timeline
-  const todayIndex = useMemo(() => findTodayIndex(timeline), [timeline]);
-
-  // Scroll to today's date on load
-  // TODO (hannah): use onStartReached prop instead
-  useEffect(() => {
-    if (!loading && todayIndex >= 0 && flatListRef.current) {
-      const scrollTimer = setTimeout(() => {
-        flatListRef.current?.scrollToIndex({
-          index: todayIndex,
-          animated: true,
-          viewPosition: 0,
-        });
-      }, 300);
-
-      return () => clearTimeout(scrollTimer);
-    }
-  }, [loading, todayIndex]);
-
-  return (
-    <Screen>
-      <Header>
-        <HeaderText>My Assignments</HeaderText>
-      </Header>
-      <AgendaContent
-        loading={loading}
-        error={error}
-        timeline={timeline}
-        flatListRef={flatListRef}
-      />
-    </Screen>
+  const nearestAssgnIdx = useMemo(
+    () => findNearestAssgnIdx(fullTimeline),
+    [fullTimeline],
   );
-}
 
-type AgendaContentProps = {
-  loading: boolean;
-  error: string | null;
-  timeline: TimelineItem[];
-  flatListRef: React.RefObject<FlatList | null>;
-};
+  // Initialize to start at nearest assignment index (today or nearest future assignment)
+  useEffect(() => {
+    if (!loading && nearestAssgnIdx >= 0 && fullTimeline[nearestAssgnIdx]) {
+      setCurrentTopDateLabel(fullTimeline[nearestAssgnIdx].label);
+    }
+  }, [loading, nearestAssgnIdx, fullTimeline]);
 
-function AgendaContent({
-  loading,
-  error,
-  timeline,
-  flatListRef,
-}: AgendaContentProps) {
-  if (loading) {
+  // Find the index of currentTopDateLabel in the timeline
+  const displayStartIndex = useMemo(() => {
+    if (currentTopDateLabel === null) {
+      return null;
+    }
+
+    const index = fullTimeline.findIndex(
+      (item) => item.label === currentTopDateLabel,
+    );
+
+    return index >= 0 ? index : 0;
+  }, [fullTimeline, currentTopDateLabel]);
+
+  // Timeline slice to display
+  const displayedTimeline = useMemo(() => {
+    if (displayStartIndex === null || displayStartIndex === 0) {
+      return fullTimeline;
+    }
+
+    return fullTimeline.slice(displayStartIndex);
+  }, [fullTimeline, displayStartIndex]);
+
+  // Handle scrolling to the top to load more past assignments
+  // This enables lazy loading where we initially show day + future, and loads more past dates on scroll up
+  const handleStartReached = () => {
+    // Only load if we're not already at the very beginning
+    if (displayStartIndex !== null && displayStartIndex > 0) {
+      // Calculate the new start position (7 dates earlier, but not before index 0)
+      const newStartIndex = Math.max(
+        0,
+        displayStartIndex - ASSIGNMENTS_BATCH_SIZE,
+      );
+
+      // Update currentTopDateLabel to the new date, which will trigger:
+      // 1. displayStartIndex recalculation finds new index for the date
+      // 2. displayedTimeline re-slice to includes more past dates
+      // 3. FlatList re-render with maintainVisibleContentPosition
+      if (fullTimeline[newStartIndex]) {
+        setCurrentTopDateLabel(fullTimeline[newStartIndex].label);
+      }
+    }
+  };
+
+  if (loading || displayStartIndex === null) {
     return (
       <ActivityIndicator
         size="large"
@@ -107,19 +135,14 @@ function AgendaContent({
   return (
     <FlatList
       ref={flatListRef}
-      data={timeline}
+      data={displayedTimeline}
       renderItem={({ item }) => <TimelineSection item={item} />}
-      keyExtractor={(item, index) => `${item.type}-${index}`}
+      keyExtractor={(item) => item.label}
       windowSize={windowHeight / 20}
-      onScrollToIndexFailed={(info) => {
-        const wait = new Promise((resolve) => setTimeout(resolve, 500));
-        wait.then(() => {
-          flatListRef.current?.scrollToIndex({
-            index: info.index,
-            animated: true,
-            viewPosition: 0,
-          });
-        });
+      onStartReached={handleStartReached}
+      onStartReachedThreshold={0.5}
+      maintainVisibleContentPosition={{
+        minIndexForVisible: 0,
       }}
       contentContainerStyle={{
         paddingHorizontal: windowHeight * 0.02,
@@ -136,10 +159,10 @@ function TimelineSection({ item }: { item: TimelineItem }) {
       {item.assignments.map((assignment) => (
         <AgendaItem
           key={assignment.id}
-          assignmentName={assignment.assignment_name}
-          courseName={assignment.course.course_name}
-          dueDate={assignment.due_date}
-          courseColor={assignment.course.course_color}
+          assignmentName={assignment.assignmentName}
+          courseName={assignment.course.courseName}
+          dueDate={assignment.dueDate}
+          courseColor={assignment.course.courseColor}
         />
       ))}
     </DateSection>
