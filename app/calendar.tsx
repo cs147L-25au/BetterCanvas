@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { EventItem } from "@howljs/calendar-kit";
+import { Dimensions } from "react-native";
 import { styled } from "styled-components/native";
 
 import { AlertTooltip } from "@/components/AlertTooltip";
@@ -9,6 +10,9 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Screen } from "@/components/Screen";
 import { createDueDateEvents } from "@/utils/calendarUtils";
 import { type Assignment, fetchAssignments } from "@/utils/supabaseQueries";
+
+const windowHeight = Dimensions.get("window").height;
+const windowWidth = Dimensions.get("window").width;
 
 export default function CalendarScreen() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -74,8 +78,8 @@ function OutdatedAssignmentsIndicator({
 
 const Container = styled.View`
   position: absolute;
-  top: 76px;
-  left: 20px;
+  top: ${windowHeight * 0.09}px;
+  left: ${windowWidth * 0.05}px;
   align-items: flex-start;
   justify-content: flex-start;
 `;
