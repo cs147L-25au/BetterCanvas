@@ -37,7 +37,7 @@ function getDueDateTimes(dueDateString: string): {
 
   // Check if adding duration extends the event beyond the current day
   const endDate = new Date(dueDate.getTime() + durationMs);
-  const extendsToNextDay = endDate.getDate() !== dueDate.getDate();
+  const extendsToNextDay = endDate.toDateString() !== dueDate.toDateString();
 
   // If it extends to next day, expand backward; otherwise expand forward
   const startTime = extendsToNextDay
