@@ -3,7 +3,7 @@ import React from "react";
 import { Dimensions } from "react-native";
 import { styled } from "styled-components/native";
 
-import { colors } from "@/assets/Themes/colors";
+import { colors, lightToDarkColorMap } from "@/assets/Themes/colors";
 
 const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
@@ -40,12 +40,12 @@ export function AgendaItem({
 }
 
 const Container = styled.View<{ courseColor: string }>`
-  background-color: ${colors.backgroundSecondary};
+  background-color: ${(props) => props.courseColor};
   border-radius: ${windowWidth * 0.02}px;
   padding: ${windowWidth * 0.04}px;
   margin-bottom: ${windowWidth * 0.02}px;
   border-left-width: ${windowWidth * 0.015}px;
-  border-left-color: ${(props) => props.courseColor};
+  border-left-color: ${(props) => lightToDarkColorMap[props.courseColor]};
 `;
 
 const TopRow = styled.View`
@@ -76,6 +76,6 @@ const BottomRow = styled.View`
 
 const CourseName = styled.Text<{ courseColor: string }>`
   font-size: ${windowWidth * 0.035}px;
-  color: ${(props) => props.courseColor};
+  color: ${(props) => lightToDarkColorMap[props.courseColor]};
   font-weight: 500;
 `;

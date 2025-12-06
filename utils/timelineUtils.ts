@@ -63,13 +63,17 @@ export function createTimeline(assignments: Assignment[]): TimelineItem[] {
 
 // Finds the index to scroll to
 export function findNearestAssgnIdx(timeline: TimelineItem[]): number {
-  if (timeline.length === 0) return -1;
+  if (timeline.length === 0) {
+    return -1;
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayKey = today.toDateString();
   const todayIndex = timeline.findIndex((item) => item.dateKey === todayKey);
-  if (todayIndex !== -1) return todayIndex;
+  if (todayIndex !== -1) {
+    return todayIndex;
+  }
 
   // Find the first assignment due today or later
   const upcomingIndex = timeline.findIndex((item) => {

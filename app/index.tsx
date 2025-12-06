@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-import { ActivityIndicator, Dimensions, FlatList } from "react-native";
+import { Dimensions, FlatList } from "react-native";
 import { styled } from "styled-components/native";
 
 import { colors } from "@/assets/Themes/colors";
 import { AgendaItem } from "@/components/AgendaItem";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Screen } from "@/components/Screen";
 import { fetchAssignments, type Assignment } from "@/utils/supabaseQueries";
 import {
@@ -119,13 +120,7 @@ function AgendaContent() {
   };
 
   if (loading || displayStartIndex === null) {
-    return (
-      <ActivityIndicator
-        size="large"
-        color={colors.accentColor}
-        style={{ marginTop: 50 }}
-      />
-    );
+    return <LoadingSpinner size="large" style={{ marginTop: 50 }} />;
   }
 
   if (error) {
