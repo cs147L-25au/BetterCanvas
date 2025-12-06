@@ -2,11 +2,16 @@ import {
   CalendarBody,
   CalendarContainer,
   CalendarHeader,
+  EventItem,
 } from "@howljs/calendar-kit";
 
-export function Calendar() {
+type CalendarProps = {
+  events: EventItem[];
+};
+
+export function Calendar({ events }: CalendarProps) {
   return (
-    <CalendarContainer>
+    <CalendarContainer events={events}>
       <CalendarHeader />
       <CalendarBody />
     </CalendarContainer>
