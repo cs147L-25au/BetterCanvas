@@ -7,7 +7,13 @@ export const colors = {
   textSecondary: "#666",
   textContrast: "#FFFFFF",
   textError: "#d32f2f",
-  boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.2)",
+  boxShadow: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 6,
+  },
   alertIcon: "#d21f3c",
 };
 

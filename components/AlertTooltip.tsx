@@ -24,7 +24,7 @@ export function AlertTooltip({ message, width = 150 }: AlertTooltipProps) {
       withPointer={false}
       containerStyle={{
         backgroundColor: colors.backgroundContrast,
-        boxShadow: colors.boxShadow,
+        ...colors.boxShadow,
       }}
       popover={<Text style={{ color: colors.textContrast }}>{message}</Text>}
     >
