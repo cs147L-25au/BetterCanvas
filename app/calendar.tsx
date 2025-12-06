@@ -1,85 +1,42 @@
-import { useEffect, useMemo, useState } from "react";
+import { useRef } from "react";
 
-import type { EventItem } from "@howljs/calendar-kit";
-import { Dimensions } from "react-native";
-import { styled } from "styled-components/native";
+import { CalendarKitHandle } from "@howljs/calendar-kit";
 
-import { AlertTooltip } from "@/components/AlertTooltip";
-import { Calendar } from "@/components/Calendar";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { AssignmentBottomSheet } from "@/components/calendar/AssignmentBottomSheet";
+import { Calendar } from "@/components/calendar/Calendar";
+import { OutdatedAssignmentsIndicator } from "@/components/calendar/OutdatedAssignmentsIndicator";
 import { Screen } from "@/components/Screen";
-import { createDueDateEvents } from "@/utils/calendarUtils";
-import { type Assignment, fetchAssignments } from "@/utils/supabaseQueries";
-
-const windowHeight = Dimensions.get("window").height;
-const windowWidth = Dimensions.get("window").width;
+import { useAssignments } from "@/hooks/useAssignments";
+import { useCalendarEvents } from "@/hooks/useCalendarEvents";
+import { useAssignmentSelection } from "@/hooks/useSelectedAssignment";
 
 export default function CalendarScreen() {
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const calendarRef = useRef<CalendarKitHandle | null>(null);
 
-  async function loadAssignments() {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await fetchAssignments();
-      setAssignments(data);
-    } catch (err) {
-      setError("Failed to fetch assignments: " + err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    loadAssignments();
-  }, []);
-
-  const dueDates: EventItem[] = useMemo(() => {
-    return createDueDateEvents(assignments);
-  }, [assignments]);
+  const { assignments, loading, error } = useAssignments();
+  const { events, addEvent, removeEvent } = useCalendarEvents(assignments);
+  const {
+    selectedAssgn,
+    selectedAssgnEvent,
+    selectAssignment,
+    clearSelection,
+  } = useAssignmentSelection(calendarRef, addEvent, removeEvent);
 
   return (
     <Screen>
-      <Calendar events={dueDates} />
+      <Calendar
+        ref={calendarRef}
+        events={events}
+        selectedEvent={selectedAssgnEvent}
+      />
       <OutdatedAssignmentsIndicator loading={loading} error={error} />
+      {/* TODO(Kelly): should only render upcoming or past overdue assignments */}
+      <AssignmentBottomSheet
+        assignments={assignments}
+        selectedAssgn={selectedAssgn}
+        onPressAssignment={selectAssignment}
+        onPressBack={clearSelection}
+      />
     </Screen>
   );
 }
-
-type OutdatedAssignmentsIndicatorProps = {
-  loading: boolean;
-  error: string | null;
-};
-
-function OutdatedAssignmentsIndicator({
-  loading,
-  error,
-}: OutdatedAssignmentsIndicatorProps) {
-  if (loading) {
-    return (
-      <Container>
-        <LoadingSpinner />
-      </Container>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container>
-        <AlertTooltip width={194} message="Error fetching assignments" />
-      </Container>
-    );
-  }
-
-  return null;
-}
-
-const Container = styled.View`
-  position: absolute;
-  top: ${windowHeight * 0.09}px;
-  left: ${windowWidth * 0.05}px;
-  align-items: flex-start;
-  justify-content: flex-start;
-`;

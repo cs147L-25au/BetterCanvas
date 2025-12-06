@@ -8,11 +8,18 @@ import { colors, lightToDarkColorMap } from "@/assets/Themes/colors";
 const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
 
+// No-op function constant to avoid linting issues
+const noop = () => {
+  // Intentionally empty
+};
+
 type AgendaItemProps = {
   assignmentName: string;
   courseName: string;
   dueDate: string;
   courseColor: string;
+  onPress?: () => void;
+  compact?: boolean;
 };
 
 export function AgendaItem({
@@ -20,6 +27,8 @@ export function AgendaItem({
   courseName,
   dueDate,
   courseColor,
+  onPress = noop,
+  compact = false,
 }: AgendaItemProps) {
   const formattedTime = new Date(dueDate).toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -27,19 +36,21 @@ export function AgendaItem({
   });
 
   return (
-    <Container courseColor={courseColor}>
+    <Container courseColor={courseColor} onPress={onPress}>
       <TopRow>
         <AssignmentName>{assignmentName}</AssignmentName>
         <DueTime>{formattedTime}</DueTime>
       </TopRow>
-      <BottomRow>
-        <CourseName courseColor={courseColor}>{courseName}</CourseName>
-      </BottomRow>
+      {compact ? null : (
+        <BottomRow>
+          <CourseName courseColor={courseColor}>{courseName}</CourseName>
+        </BottomRow>
+      )}
     </Container>
   );
 }
 
-const Container = styled.View<{ courseColor: string }>`
+const Container = styled.Pressable<{ courseColor: string }>`
   background-color: ${(props) => props.courseColor};
   border-radius: ${windowWidth * 0.02}px;
   padding: ${windowWidth * 0.04}px;

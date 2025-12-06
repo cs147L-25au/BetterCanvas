@@ -54,6 +54,7 @@ function AgendaContent() {
         setLoading(false);
       }
     }
+
     loadAssignments();
   }, []);
 
