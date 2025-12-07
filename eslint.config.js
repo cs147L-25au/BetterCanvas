@@ -63,6 +63,16 @@ export default defineConfig([
           prev: "block-like",
           next: "return",
         },
+        {
+          blankLine: "always",
+          prev: "block-like",
+          next: "*",
+        },
+        {
+          blankLine: "always",
+          prev: "multiline-expression",
+          next: "*",
+        },
       ],
       "@typescript-eslint/consistent-type-definitions": ["off"],
       "@typescript-eslint/no-non-null-assertion": "error",
