@@ -31,7 +31,6 @@ export function AgendaItem({
   onPress = noop,
   compact = false,
 }: AgendaItemProps) {
-
   const [isChecked, setIsChecked] = useState(false);
   const formattedTime = new Date(dueDate).toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -43,7 +42,11 @@ export function AgendaItem({
   };
 
   return (
-    <Container courseColor={courseColor} onPress={onPress} isChecked={isChecked}>
+    <Container
+      courseColor={courseColor}
+      onPress={onPress}
+      isChecked={isChecked}
+    >
       <ContentWrapper>
         <CheckboxButton onPress={handleCheckboxPress}>
           <Ionicons
@@ -54,7 +57,9 @@ export function AgendaItem({
         </CheckboxButton>
         <TextContent>
           <TopRow>
-            <AssignmentName isChecked={isChecked}>{assignmentName}</AssignmentName>
+            <AssignmentName isChecked={isChecked}>
+              {assignmentName}
+            </AssignmentName>
             <DueTime isChecked={isChecked}>{formattedTime}</DueTime>
           </TopRow>
           {compact ? null : (
@@ -109,7 +114,8 @@ const AssignmentName = styled.Text<{ isChecked: boolean }>`
   flex: 1;
   margin-right: ${windowWidth * 0.02}px;
   /* Strike through assignment when checkbox is checked */
-  text-decoration-line: ${(props) => (props.isChecked ? "line-through" : "none")};
+  text-decoration-line: ${(props) =>
+    props.isChecked ? "line-through" : "none"};
 `;
 
 const DueTime = styled.Text<{ isChecked: boolean }>`
