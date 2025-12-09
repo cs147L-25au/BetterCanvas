@@ -10,7 +10,6 @@ import { signIn, signUp } from "@/utils/auth";
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -21,15 +20,10 @@ export default function LoginScreen() {
       return;
     }
 
-    if (isSignUp && !fullName) {
-      Alert.alert("Error", "Please enter your name");
-      return;
-    }
-
     setLoading(true);
 
     if (isSignUp) {
-      const { error } = await signUp(email, password, fullName);
+      const { error } = await signUp(email, password);
       if (error) {
         Alert.alert("Sign Up Error", error.message);
       } else {
@@ -50,16 +44,6 @@ export default function LoginScreen() {
   return (
     <Container>
       <Title>BetterCanvas</Title>
-
-      {isSignUp && (
-        <Input
-          placeholder="Name"
-          value={fullName}
-          onChangeText={setFullName}
-          placeholderTextColor={colors.textSecondary}
-        />
-      )}
-
       <Input
         placeholder="Email"
         value={email}

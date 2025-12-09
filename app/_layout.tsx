@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { Stack, useRouter, useSegments } from "expo-router";
 
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { supabase } from "@/lib/supabase";
 
 export default function RootLayout() {
@@ -43,7 +44,7 @@ export default function RootLayout() {
   }, [user, segments, loading, router]);
 
   if (loading) {
-    return null; // Or a loading screen
+    return <LoadingSpinner size="large" style={{ marginTop: 50 }} />;
   }
 
   return <Stack screenOptions={{ headerShown: false }} />;
