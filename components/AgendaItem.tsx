@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { Dimensions } from "react-native";
 import { styled } from "styled-components/native";
 
@@ -30,33 +31,73 @@ export function AgendaItem({
   onPress = noop,
   compact = false,
 }: AgendaItemProps) {
+  const [isChecked, setIsChecked] = useState(false);
   const formattedTime = new Date(dueDate).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
   });
 
+  const handleCheckboxPress = () => {
+    setIsChecked(!isChecked);
+  };
+
   return (
-    <Container courseColor={courseColor} onPress={onPress}>
-      <TopRow>
-        <AssignmentName>{assignmentName}</AssignmentName>
-        <DueTime>{formattedTime}</DueTime>
-      </TopRow>
-      {compact ? null : (
-        <BottomRow>
-          <CourseName courseColor={courseColor}>{courseName}</CourseName>
-        </BottomRow>
-      )}
+    <Container
+      courseColor={courseColor}
+      onPress={onPress}
+      isChecked={isChecked}
+    >
+      <ContentWrapper>
+        <CheckboxButton onPress={handleCheckboxPress}>
+          <Ionicons
+            name={isChecked ? "checkbox" : "square-outline"}
+            size={windowWidth * 0.065}
+            color={lightToDarkColorMap[courseColor]}
+          />
+        </CheckboxButton>
+        <TextContent>
+          <TopRow>
+            <AssignmentName isChecked={isChecked}>
+              {assignmentName}
+            </AssignmentName>
+            <DueTime isChecked={isChecked}>{formattedTime}</DueTime>
+          </TopRow>
+          {compact ? null : (
+            <BottomRow>
+              <CourseName courseColor={courseColor} isChecked={isChecked}>
+                {courseName}
+              </CourseName>
+            </BottomRow>
+          )}
+        </TextContent>
+      </ContentWrapper>
     </Container>
   );
 }
 
-const Container = styled.Pressable<{ courseColor: string }>`
+const Container = styled.Pressable<{ courseColor: string; isChecked: boolean }>`
   background-color: ${(props) => props.courseColor};
   border-radius: ${windowWidth * 0.02}px;
   padding: ${windowWidth * 0.04}px;
   margin-bottom: ${windowWidth * 0.02}px;
   border-left-width: ${windowWidth * 0.015}px;
   border-left-color: ${(props) => lightToDarkColorMap[props.courseColor]};
+  /* Lower the opacity of the agenda item when checked */
+  opacity: ${(props) => (props.isChecked ? 0.4 : 1)};
+`;
+
+const ContentWrapper = styled.View`
+  flex-direction: row;
+  align-items: flex-start;
+`;
+
+const CheckboxButton = styled.Pressable`
+  margin-right: ${windowWidth * 0.03}px;
+  padding: ${windowWidth * 0.005}px;
+`;
+
+const TextContent = styled.View`
+  flex: 1;
 `;
 
 const TopRow = styled.View`
@@ -66,15 +107,18 @@ const TopRow = styled.View`
   margin-bottom: ${windowHeight * 0.01}px;
 `;
 
-const AssignmentName = styled.Text`
+const AssignmentName = styled.Text<{ isChecked: boolean }>`
   font-size: ${windowWidth * 0.04}px;
   font-weight: 600;
   color: ${colors.textPrimary};
   flex: 1;
   margin-right: ${windowWidth * 0.02}px;
+  /* Strike through assignment when checkbox is checked */
+  text-decoration-line: ${(props) =>
+    props.isChecked ? "line-through" : "none"};
 `;
 
-const DueTime = styled.Text`
+const DueTime = styled.Text<{ isChecked: boolean }>`
   font-size: ${windowWidth * 0.035}px;
   color: ${colors.textSecondary};
 `;
@@ -85,7 +129,7 @@ const BottomRow = styled.View`
   align-items: center;
 `;
 
-const CourseName = styled.Text<{ courseColor: string }>`
+const CourseName = styled.Text<{ courseColor: string; isChecked: boolean }>`
   font-size: ${windowWidth * 0.035}px;
   color: ${(props) => lightToDarkColorMap[props.courseColor]};
   font-weight: 500;
