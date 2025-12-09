@@ -1,29 +1,50 @@
-import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useEffect, useState } from "react";
 
-export default function TabLayout() {
-  return (
-    <GestureHandlerRootView>
-      <NativeTabs>
-        <NativeTabs.Trigger name="index">
-          <Label>Agenda</Label>
-          <Icon
-            sf="list.bullet.below.rectangle"
-            drawable="custom_android_drawable"
-          />
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="calendar">
-          <Icon sf="calendar" drawable="custom_settings_drawable" />
-          <Label>Calendar</Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="courses">
-          <Label>My Courses</Label>
-          <Icon
-            sf="rectangle.grid.3x2.fill"
-            drawable="custom_android_drawable"
-          />
-        </NativeTabs.Trigger>
-      </NativeTabs>
-    </GestureHandlerRootView>
-  );
+import type { User } from "@supabase/supabase-js";
+import { Stack, useRouter, useSegments } from "expo-router";
+
+import { supabase } from "@/lib/supabase";
+
+export default function RootLayout() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    const inAuthGroup = segments[0] === "login";
+
+    if (!user && !inAuthGroup) {
+      router.replace("/login");
+    } else if (user && inAuthGroup) {
+      router.replace("/tabs");
+    }
+  }, [user, segments, loading, router]);
+
+  if (loading) {
+    return null; // Or a loading screen
+  }
+
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
