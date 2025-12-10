@@ -1,11 +1,14 @@
 import { useState } from "react";
 
 import { useRouter } from "expo-router";
-import { Alert } from "react-native";
+import { Alert, Dimensions } from "react-native";
 import { styled } from "styled-components/native";
 
 import { colors } from "@/assets/Themes/colors";
 import { signIn, signUp } from "@/utils/auth";
+
+const windowWidth = Dimensions.get("window").width;
+const windowHeight = Dimensions.get("window").height;
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -27,7 +30,7 @@ export default function LoginScreen() {
       if (error) {
         Alert.alert("Sign Up Error", error.message);
       } else {
-        Alert.alert("Success!");
+        router.replace("/courseSelection");
       }
     } else {
       const { error } = await signIn(email, password);
@@ -43,7 +46,7 @@ export default function LoginScreen() {
 
   return (
     <Container>
-      <Title>BetterCanvas</Title>
+      <Logo source={require("@/assets/logo.png")} resizeMode="contain" />
       <Input
         placeholder="Email"
         value={email}
@@ -85,43 +88,42 @@ const Container = styled.View`
   background-color: ${colors.background};
 `;
 
-const Title = styled.Text`
-  font-size: 32px;
-  font-weight: bold;
-  color: ${colors.textPrimary};
-  text-align: center;
-  margin-bottom: 40px;
+const Logo = styled.Image`
+  width: ${windowWidth * 0.55}px;
+  height: ${windowWidth * 0.55}px;
+  align-self: center;
+  margin-bottom: ${windowHeight * 0.01}px;
 `;
 
 const Input = styled.TextInput`
   background-color: ${colors.backgroundSecondary};
   color: ${colors.textPrimary};
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  font-size: 16px;
+  padding: ${windowHeight * 0.02}px;
+  border-radius: ${windowHeight * 0.01}px;
+  margin-bottom: ${windowHeight * 0.015}px;
+  font-size: ${windowHeight * 0.02}px;
 `;
 
 const Button = styled.Pressable`
   background-color: ${colors.accentColor};
-  padding: 15px;
-  border-radius: 8px;
-  margin-top: 10px;
+  padding: ${windowHeight * 0.02}px;
+  border-radius: ${windowHeight * 0.01}px;
+  margin-top: ${windowHeight * 0.01}px;
 `;
 
 const ButtonText = styled.Text`
   color: white;
   text-align: center;
-  font-size: 16px;
+  font-size: ${windowHeight * 0.02}px;
   font-weight: 600;
 `;
 
 const ToggleButton = styled.Pressable`
-  margin-top: 20px;
+  margin-top: ${windowHeight * 0.02}px;
 `;
 
 const ToggleText = styled.Text`
   color: ${colors.accentColor};
   text-align: center;
-  font-size: 14px;
+  font-size: ${windowHeight * 0.018}px;
 `;
