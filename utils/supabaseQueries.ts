@@ -2,6 +2,13 @@ import { colors } from "@/assets/Themes/colors";
 import { supabase } from "@/lib/supabase";
 import type { Database } from "@/types/database";
 
+export type Course = {
+  id: string;
+  course_name: string;
+  course_number: string;
+  course_color: string;
+};
+
 export type Assignment = {
   id: string;
   assignmentName: string;
@@ -25,16 +32,44 @@ export type Assignment = {
 //   } | null;
 // };
 
-type SupabaseAssignmentReturn =
-  Database["public"]["Tables"]["assignments"]["Row"] & {
-    course: Pick<
-      Database["public"]["Tables"]["courses"]["Row"],
-      "course_name" | "course_color"
-    > | null;
-  };
+type SupabaseAssignmentReturn = Omit<
+  Database["public"]["Tables"]["assignments"]["Row"],
+  "course_id" | "created_at"
+> & {
+  course: Pick<
+    Database["public"]["Tables"]["courses"]["Row"],
+    "course_name" | "course_color"
+  > | null;
+};
 
 export async function fetchAssignments(): Promise<Assignment[]> {
   try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get user's enrolled courses
+    const { data: userCourses, error: coursesError } = await supabase
+      .from("user_courses")
+      .select("course_id")
+      .eq("user_id", user.id);
+
+    if (coursesError) {
+      throw coursesError;
+    }
+
+    const courseIds =
+      (userCourses as { course_id: string }[])?.map((uc) => uc.course_id) || [];
+
+    if (courseIds.length === 0) {
+      return []; // No courses selected yet
+    }
+
+    // Fetch assignments only for user's courses
     const { data, error } = await supabase
       .from("assignments")
       .select(
@@ -46,6 +81,7 @@ export async function fetchAssignments(): Promise<Assignment[]> {
         course:courses(course_name, course_color)
       `,
       )
+      .in("course_id", courseIds)
       .order("due_date", { ascending: true });
 
     if (error) {
@@ -70,5 +106,24 @@ export async function fetchAssignments(): Promise<Assignment[]> {
   } catch (err) {
     console.log(err);
     throw new Error("Failed to fetch assignments");
+  }
+}
+
+// Fetches all available courses
+export async function fetchCourses(): Promise<Course[]> {
+  try {
+    const { data, error } = await supabase
+      .from("courses")
+      .select("id, course_name, course_number, course_color")
+      .order("course_name");
+
+    if (error) {
+      throw error;
+    }
+
+    return data || [];
+  } catch (err) {
+    console.log(err);
+    throw new Error("Failed to fetch courses");
   }
 }
