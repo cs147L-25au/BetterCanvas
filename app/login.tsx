@@ -7,16 +7,17 @@ import { styled } from "styled-components/native";
 import { colors } from "@/assets/Themes/colors";
 import { signIn, signUp } from "@/utils/auth";
 
-const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
+const windowWidth = Dimensions.get("window").width;
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // Toggle between sign in and sign up mode
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
+  const router = useRouter();
   async function handleAuth() {
     if (!email || !password) {
       Alert.alert("Error", "Please fill in all fields");
@@ -26,13 +27,16 @@ export default function LoginScreen() {
     setLoading(true);
 
     if (isSignUp) {
+      // Sign up flow: Create new account and redirect to course selection
       const { error } = await signUp(email, password);
       if (error) {
         Alert.alert("Sign Up Error", error.message);
       } else {
+        // Redirect to course selection after successful sign up
         router.replace("/courseSelection");
       }
     } else {
+      // Login existing user and redirect to main app
       const { error } = await signIn(email, password);
       if (error) {
         Alert.alert("Login Error", error.message);
@@ -47,6 +51,7 @@ export default function LoginScreen() {
   return (
     <Container>
       <Logo source={require("@/assets/logo.png")} resizeMode="contain" />
+
       <Input
         placeholder="Email"
         value={email}
