@@ -154,7 +154,7 @@ export function AddAssignment({
 
           <ScrollView
             style={{ flex: 1 }}
-            contentContainerStyle={{ paddingBottom: 20 }}
+            contentContainerStyle={{ paddingBottom: windowHeight * 0.05 }}
             showsVerticalScrollIndicator={true}
           >
             <FormSection>
@@ -169,31 +169,25 @@ export function AddAssignment({
 
             <FormSection>
               <Label>Course</Label>
-              {courses.length === 0 ? (
-                <NoCourseText>
-                  No courses available. Please add courses first.
-                </NoCourseText>
-              ) : (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={{ marginTop: 8 }}
-                  contentContainerStyle={{ paddingRight: 20 }}
-                >
-                  {courses.map((course) => (
-                    <CourseChip
-                      key={course.id}
-                      selected={selectedCourseId === course.id}
-                      onPress={() => setSelectedCourseId(course.id)}
-                      color={lightToDarkColorMap[course.course_color]}
-                    >
-                      <CourseChipText selected={selectedCourseId === course.id}>
-                        {course.course_number}
-                      </CourseChipText>
-                    </CourseChip>
-                  ))}
-                </ScrollView>
-              )}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginTop: windowHeight * 0.015 }}
+                contentContainerStyle={{ paddingRight: windowWidth * 0.02 }}
+              >
+                {courses.map((course) => (
+                  <CourseChip
+                    key={course.id}
+                    selected={selectedCourseId === course.id}
+                    onPress={() => setSelectedCourseId(course.id)}
+                    color={lightToDarkColorMap[course.course_color]}
+                  >
+                    <CourseChipText selected={selectedCourseId === course.id}>
+                      {course.course_number}
+                    </CourseChipText>
+                  </CourseChip>
+                ))}
+              </ScrollView>
             </FormSection>
 
             <FormSection>
@@ -252,11 +246,8 @@ export function AddAssignment({
           </ScrollView>
 
           <ButtonContainer>
-            <CancelButton onPress={handleClose}>
-              <CancelButtonText>Cancel</CancelButtonText>
-            </CancelButton>
             <SaveButton onPress={handleSave} disabled={saving}>
-              <SaveButtonText>{saving ? "Saving..." : "Save"}</SaveButtonText>
+              <ButtonText>{saving ? "Saving..." : "Save"}</ButtonText>
             </SaveButton>
           </ButtonContainer>
         </ModalContent>
@@ -320,13 +311,6 @@ const Input = styled.TextInput`
   color: ${colors.textPrimary};
 `;
 
-const NoCourseText = styled.Text`
-  font-size: ${windowHeight * 0.016}px;
-  color: ${colors.textSecondary};
-  font-style: italic;
-  margin-top: ${windowHeight * 0.01}px;
-`;
-
 const CourseChip = styled.TouchableOpacity<{
   selected: boolean;
   color: string;
@@ -386,17 +370,9 @@ const ButtonContainer = styled.View`
   gap: ${windowWidth * 0.03}px;
 `;
 
-const CancelButton = styled.TouchableOpacity`
-  flex: 1;
-  background-color: ${colors.backgroundSecondary};
-  border-radius: ${windowWidth * 0.02}px;
-  padding: ${windowHeight * 0.018}px;
-  align-items: center;
-`;
-
-const CancelButtonText = styled.Text`
+const ButtonText = styled.Text`
   font-size: ${windowHeight * 0.02}px;
-  color: ${colors.textPrimary};
+  color: ${colors.textContrast};
   font-weight: 600;
 `;
 
@@ -407,12 +383,6 @@ const SaveButton = styled.TouchableOpacity<{ disabled: boolean }>`
   border-radius: ${windowWidth * 0.02}px;
   padding: ${windowHeight * 0.018}px;
   align-items: center;
-`;
-
-const SaveButtonText = styled.Text`
-  font-size: ${windowHeight * 0.02}px;
-  color: ${colors.background};
-  font-weight: 600;
 `;
 
 const PickerContainer = styled.View`

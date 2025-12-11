@@ -85,7 +85,6 @@ function AgendaContent({
   assignments,
   loading,
   error,
-  refetch,
 }: {
   assignments: Assignment[];
   loading: boolean;
@@ -232,7 +231,7 @@ const AddButton = styled.TouchableOpacity<{ disabled: boolean }>`
 `;
 
 const AddButtonText = styled.Text`
-  font-size: ${windowHeight * 0.035}px;
+  font-size: ${windowHeight * 0.04}px;
   color: ${colors.background};
   font-weight: bold;
 `;
