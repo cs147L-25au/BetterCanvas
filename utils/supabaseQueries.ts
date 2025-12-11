@@ -52,7 +52,15 @@ export async function fetchAssignments(): Promise<Assignment[]> {
       return []; // No courses selected yet
     }
 
-    // Fetch assignments only for user's courses
+    // Get current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    // Fetch assignments for user's courses: global (user_id is null) or user-specific (user_id = user.id)
     const { data, error } = await supabase
       .from("assignments")
       .select(
@@ -61,10 +69,12 @@ export async function fetchAssignments(): Promise<Assignment[]> {
         assignment_name,
         due_date,
         estimated_duration,
-        course:courses(course_name, course_color)
+        course:courses(course_name, course_color),
+        user_id
       `,
       )
       .in("course_id", courseIds)
+      .or(`user_id.is.null,user_id.eq.${user.id}`)
       .order("due_date", { ascending: true });
 
     if (error) {
@@ -72,18 +82,22 @@ export async function fetchAssignments(): Promise<Assignment[]> {
     }
 
     // Map data to Assignment type
-    const result = (data || []).map((item: SupabaseAssignmentReturn) => {
-      return {
-        id: item.id,
-        assignmentName: item.assignment_name,
-        dueDate: item.due_date,
-        estimatedDuration: item.estimated_duration,
-        course: {
-          courseName: item.course?.course_name || "Unknown Course",
-          courseColor: item.course?.course_color || colors.accentColor,
-        },
-      };
-    });
+    const result = Array.isArray(data)
+      ? (
+          data as (SupabaseAssignmentReturn & { user_id?: string | null })[]
+        ).map((item) => {
+          return {
+            id: item.id,
+            assignmentName: item.assignment_name,
+            dueDate: item.due_date,
+            estimatedDuration: item.estimated_duration,
+            course: {
+              courseName: item.course?.course_name || "Unknown Course",
+              courseColor: item.course?.course_color || colors.accentColor,
+            },
+          };
+        })
+      : [];
 
     return result;
   } catch (err) {
@@ -162,7 +176,7 @@ export async function createAssignment(assignment: {
       throw new Error("Not authenticated");
     }
 
-    // Insert the assignment
+    // Insert the assignment with user_id for custom assignments
     const { data, error } = await supabase
       .from("assignments")
       .insert({
@@ -170,6 +184,7 @@ export async function createAssignment(assignment: {
         course_id: assignment.courseId,
         due_date: assignment.dueDate.toISOString(),
         estimated_duration: assignment.estimatedDuration,
+        user_id: user.id, // always set user_id for custom assignments
       })
       .select(
         `

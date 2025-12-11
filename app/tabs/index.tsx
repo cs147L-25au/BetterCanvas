@@ -13,6 +13,7 @@ import {
   createAssignment,
   fetchUserCourses,
   type Course,
+  type Assignment,
 } from "@/utils/supabaseQueries";
 import {
   createTimeline,
@@ -28,7 +29,7 @@ export default function AgendaScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
-  const { refetch } = useAssignments();
+  const { assignments, loading, error, refetch } = useAssignments();
 
   // Load user's courses when modal opens
   const handleOpenModal = async () => {
@@ -64,7 +65,12 @@ export default function AgendaScreen() {
           <AddButtonText>+</AddButtonText>
         </AddButton>
       </Header>
-      <AgendaContent />
+      <AgendaContent
+        assignments={assignments}
+        loading={loading}
+        error={error}
+        refetch={refetch}
+      />
       <AddAssignment
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
@@ -75,8 +81,17 @@ export default function AgendaScreen() {
   );
 }
 
-function AgendaContent() {
-  const { assignments, loading, error } = useAssignments();
+function AgendaContent({
+  assignments,
+  loading,
+  error,
+  refetch,
+}: {
+  assignments: Assignment[];
+  loading: boolean;
+  error: string | undefined;
+  refetch: () => Promise<void>;
+}) {
   // Current topmost agenda item on the screen
   const [currentTopDateLabel, setCurrentTopDateLabel] = useState<string | null>(
     null,
