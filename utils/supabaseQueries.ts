@@ -44,27 +44,9 @@ type SupabaseAssignmentReturn = Omit<
 
 export async function fetchAssignments(): Promise<Assignment[]> {
   try {
-    // TODO hannah: if we need authentication in the future, move to helper
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
-
-    // Get user's enrolled courses
-    const { data: userCourses, error: coursesError } = await supabase
-      .from("user_courses")
-      .select("course_id")
-      .eq("user_id", user.id);
-
-    if (coursesError) {
-      throw coursesError;
-    }
-
-    const courseIds =
-      (userCourses as { course_id: string }[])?.map((uc) => uc.course_id) || [];
+    // Get user's enrolled courses using fetchUserCourses
+    const userCourses = await fetchUserCourses();
+    const courseIds = userCourses.map((course) => course.id);
 
     if (courseIds.length === 0) {
       return []; // No courses selected yet
@@ -126,5 +108,97 @@ export async function fetchCourses(): Promise<Course[]> {
   } catch (err) {
     console.log(err);
     throw new Error("Failed to fetch courses");
+  }
+}
+
+// Fetches only the user's enrolled courses
+export async function fetchUserCourses(): Promise<Course[]> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get user's enrolled courses with full course details
+    const { data, error } = await supabase
+      .from("user_courses")
+      .select(
+        `course_id, courses(id, course_name, course_number, course_color)`,
+      )
+      .eq("user_id", user.id);
+
+    if (error) {
+      throw error;
+    }
+
+    // Extract and flatten the course data
+    const courses = (data || [])
+      .map((uc: { courses: Course | null }) => uc.courses)
+      .filter(Boolean) as Course[];
+
+    return courses;
+  } catch (err) {
+    console.log(err);
+    throw new Error("Failed to fetch user courses");
+  }
+}
+
+// Creates a new assignment
+export async function createAssignment(assignment: {
+  assignmentName: string;
+  courseId: string;
+  dueDate: Date;
+  estimatedDuration: number;
+}): Promise<Assignment> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    // Insert the assignment
+    const { data, error } = await supabase
+      .from("assignments")
+      .insert({
+        assignment_name: assignment.assignmentName,
+        course_id: assignment.courseId,
+        due_date: assignment.dueDate.toISOString(),
+        estimated_duration: assignment.estimatedDuration,
+      })
+      .select(
+        `
+        id,
+        assignment_name,
+        due_date,
+        estimated_duration,
+        course:courses(course_name, course_color)
+      `,
+      )
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    // Map to Assignment type
+    return {
+      id: data.id,
+      assignmentName: data.assignment_name,
+      dueDate: data.due_date,
+      estimatedDuration: data.estimated_duration,
+      course: {
+        courseName: data.course?.course_name || "Unknown Course",
+        courseColor: data.course?.course_color || colors.accentColor,
+      },
+    };
+  } catch (err) {
+    console.log(err);
+    throw new Error("Failed to create assignment");
   }
 }
