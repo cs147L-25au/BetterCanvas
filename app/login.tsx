@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useRouter } from "expo-router";
-import { Alert, Dimensions } from "react-native";
+import { Alert, Animated, Dimensions } from "react-native";
 import { styled } from "styled-components/native";
 
 import { colors } from "@/assets/Themes/colors";
@@ -17,7 +17,34 @@ export default function LoginScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Animation values
+  const scaleAnim = useRef(new Animated.Value(1)).current;
   const router = useRouter();
+
+  // Animate logo continuously - pulse only
+  useEffect(() => {
+    const pulseAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.2,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    pulseAnimation.start();
+
+    return () => {
+      pulseAnimation.stop();
+    };
+  }, [scaleAnim]);
+
   async function handleAuth() {
     if (!email || !password) {
       Alert.alert("Error", "Please fill in all fields");
@@ -50,7 +77,13 @@ export default function LoginScreen() {
 
   return (
     <Container>
-      <Logo source={require("@/assets/logo.png")} resizeMode="contain" />
+      <AnimatedLogo
+        source={require("@/assets/logo.png")}
+        resizeMode="contain"
+        style={{
+          transform: [{ scale: scaleAnim }],
+        }}
+      />
 
       <Input
         placeholder="Email"
@@ -93,12 +126,12 @@ const Container = styled.View`
   background-color: ${colors.background};
 `;
 
-const Logo = styled.Image`
+const AnimatedLogo = Animated.createAnimatedComponent(styled.Image`
   width: ${windowWidth * 0.55}px;
   height: ${windowWidth * 0.55}px;
   align-self: center;
   margin-bottom: ${windowHeight * 0.01}px;
-`;
+`);
 
 const Input = styled.TextInput`
   background-color: ${colors.backgroundSecondary};
