@@ -32,6 +32,7 @@ export function AgendaItem({
   compact = false,
 }: AgendaItemProps) {
   const [isChecked, setIsChecked] = useState(false);
+
   const formattedTime = new Date(dueDate).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -44,8 +45,8 @@ export function AgendaItem({
   return (
     <Container
       courseColor={courseColor}
-      onPress={onPress}
       isChecked={isChecked}
+      onPress={onPress}
     >
       <ContentWrapper>
         <CheckboxButton onPress={handleCheckboxPress}>
@@ -60,13 +61,11 @@ export function AgendaItem({
             <AssignmentName isChecked={isChecked}>
               {assignmentName}
             </AssignmentName>
-            <DueTime isChecked={isChecked}>{formattedTime}</DueTime>
+            <DueTime>{formattedTime}</DueTime>
           </TopRow>
           {compact ? null : (
             <BottomRow>
-              <CourseName courseColor={courseColor} isChecked={isChecked}>
-                {courseName}
-              </CourseName>
+              <CourseName courseColor={courseColor}>{courseName}</CourseName>
             </BottomRow>
           )}
         </TextContent>
@@ -118,7 +117,7 @@ const AssignmentName = styled.Text<{ isChecked: boolean }>`
     props.isChecked ? "line-through" : "none"};
 `;
 
-const DueTime = styled.Text<{ isChecked: boolean }>`
+const DueTime = styled.Text`
   font-size: ${windowWidth * 0.035}px;
   color: ${colors.textSecondary};
 `;
@@ -129,7 +128,7 @@ const BottomRow = styled.View`
   align-items: center;
 `;
 
-const CourseName = styled.Text<{ courseColor: string; isChecked: boolean }>`
+const CourseName = styled.Text<{ courseColor: string }>`
   font-size: ${windowWidth * 0.035}px;
   color: ${(props) => lightToDarkColorMap[props.courseColor]};
   font-weight: 500;
