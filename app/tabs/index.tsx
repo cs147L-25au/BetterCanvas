@@ -7,7 +7,7 @@ import { colors } from "@/assets/Themes/colors";
 import { AgendaItem } from "@/components/AgendaItem";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Screen } from "@/components/Screen";
-import { fetchAssignments, type Assignment } from "@/utils/supabaseQueries";
+import { useAssignments } from "@/hooks/useAssignments";
 import {
   createTimeline,
   findNearestAssgnIdx,
@@ -30,33 +30,12 @@ export default function AgendaScreen() {
 }
 
 function AgendaContent() {
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { assignments, loading, error } = useAssignments();
   // Current topmost agenda item on the screen
   const [currentTopDateLabel, setCurrentTopDateLabel] = useState<string | null>(
     null,
   );
   const flatListRef = useRef<FlatList>(null);
-
-  // Fetch assignments
-  useEffect(() => {
-    async function loadAssignments() {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await fetchAssignments();
-        setAssignments(data);
-      } catch (err) {
-        setError("Failed to fetch assignments");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadAssignments();
-  }, []);
 
   // Memorize timeline to avoid recalculating on every render; rerender when assignments change
   const fullTimeline = useMemo(

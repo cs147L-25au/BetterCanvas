@@ -84,7 +84,6 @@ export default function LoginScreen() {
           transform: [{ scale: scaleAnim }],
         }}
       />
-
       <Input
         placeholder="Email"
         value={email}
@@ -93,21 +92,18 @@ export default function LoginScreen() {
         keyboardType="email-address"
         placeholderTextColor={colors.textSecondary}
       />
-
       <Input
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
+        secureTextEntry={true}
         placeholderTextColor={colors.textSecondary}
       />
-
       <Button onPress={handleAuth} disabled={loading}>
         <ButtonText>
           {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
         </ButtonText>
       </Button>
-
       <ToggleButton onPress={() => setIsSignUp(!isSignUp)}>
         <ToggleText>
           {isSignUp

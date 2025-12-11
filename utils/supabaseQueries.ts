@@ -44,6 +44,7 @@ type SupabaseAssignmentReturn = Omit<
 
 export async function fetchAssignments(): Promise<Assignment[]> {
   try {
+    // TODO hannah: if we need authentication in the future, move to helper
     const {
       data: { user },
     } = await supabase.auth.getUser();

@@ -25,9 +25,9 @@ export function CourseItem({
 }: CourseItemProps) {
   return (
     <Container
-      onPress={onPress}
-      isSelected={isSelected}
       courseColor={courseColor}
+      isSelected={isSelected}
+      onPress={onPress}
     >
       <Checkbox isSelected={isSelected} courseColor={courseColor}>
         {isSelected && <CheckMark>✓</CheckMark>}

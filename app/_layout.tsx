@@ -45,46 +45,60 @@ export default function RootLayout() {
 
   /**
    * Checks if the authenticated user has selected any courses
-   * If no courses found, redirects to course selection screen
+   * Returns true if user has courses, false otherwise
    */
-  const checkUserCourses = useCallback(async () => {
+  const checkUserCourses = useCallback(async (): Promise<boolean> => {
     if (!user) {
-      return;
+      return false;
     }
 
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("user_courses")
         .select("id")
         .eq("user_id", user.id)
         .limit(1);
 
-      if (!data || data.length === 0) {
-        router.replace("/courseSelection");
+      if (error) {
+        throw error;
       }
 
-      setCheckedCourses(true);
+      return data !== null && data.length > 0;
     } catch (error) {
       console.error("Error checking user courses:", error);
-      setCheckedCourses(true);
+      throw error;
     }
-  }, [user, router]);
+  }, [user]);
 
   useEffect(() => {
     if (loading) {
       return;
     }
 
-    // Check if user is on a public route (login or course selection)
-    const inAuthGroup =
-      segments[0] === "login" || segments[0] === "courseSelection";
+    // Check if user is on a public route (only login is public)
+    const inAuthGroup = segments[0] === "login";
 
-    // Redirect to login if not authenticated and not already on a public route
+    // Redirect to login if not authenticated and not already on login
     if (!user && !inAuthGroup) {
       router.replace("/login");
-    } else if (user && !inAuthGroup && !checkedCourses) {
-      // If authenticated and not on public route, check if user has selected courses
-      checkUserCourses();
+    } else if (user && !checkedCourses) {
+      // If authenticated, check if user has selected courses and redirect accordingly
+      checkUserCourses()
+        .then((hasCourses) => {
+          if (!hasCourses) {
+            router.replace("/courseSelection");
+          } else if (segments[0] !== "tabs") {
+            router.replace("/tabs");
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to check user courses:", error);
+          // On error, default to showing course selection as a safe fallback
+          router.replace("/courseSelection");
+        })
+        .finally(() => {
+          setCheckedCourses(true);
+        });
     }
   }, [user, segments, loading, checkedCourses, router, checkUserCourses]);
 
