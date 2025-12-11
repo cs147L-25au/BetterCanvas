@@ -10,22 +10,22 @@ export function useAssignments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>(undefined);
 
-  useEffect(() => {
-    async function loadAssignments() {
-      try {
-        setLoading(true);
-        setError(undefined);
-        const data = await fetchAssignments();
-        setAssignments(data);
-      } catch (err) {
-        setError("Failed to fetch assignments: " + err);
-      } finally {
-        setLoading(false);
-      }
+  const loadAssignments = async () => {
+    try {
+      setLoading(true);
+      setError(undefined);
+      const data = await fetchAssignments();
+      setAssignments(data);
+    } catch (err) {
+      setError("Failed to fetch assignments: " + err);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     loadAssignments();
   }, []);
 
-  return { assignments, loading, error };
+  return { assignments, loading, error, refetch: loadAssignments };
 }

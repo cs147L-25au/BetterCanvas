@@ -4,10 +4,16 @@ import { Dimensions, FlatList } from "react-native";
 import { styled } from "styled-components/native";
 
 import { colors } from "@/assets/Themes/colors";
-import { AgendaItem } from "@/components/AgendaItem";
+import { AddAssignment } from "@/components/agenda/AddAssignment";
+import { AgendaItem } from "@/components/agenda/AgendaItem";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Screen } from "@/components/Screen";
 import { useAssignments } from "@/hooks/useAssignments";
+import {
+  createAssignment,
+  fetchUserCourses,
+  type Course,
+} from "@/utils/supabaseQueries";
 import {
   createTimeline,
   findNearestAssgnIdx,
@@ -19,12 +25,52 @@ const windowHeight = Dimensions.get("window").height;
 const ASSIGNMENTS_BATCH_SIZE = 7; // Load 7 past assignment dates at a time
 
 export default function AgendaScreen() {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+  const { refetch } = useAssignments();
+
+  // Load user's courses when modal opens
+  const handleOpenModal = async () => {
+    setLoadingCourses(true);
+    try {
+      const userCourses = await fetchUserCourses();
+      setCourses(userCourses);
+      setModalVisible(true);
+    } catch (err) {
+      console.error("Failed to load courses:", err);
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
+
+  const handleSaveAssignment = async (assignment: {
+    assignmentName: string;
+    courseId: string;
+    dueDate: Date;
+    estimatedDuration: number;
+  }) => {
+    await createAssignment(assignment);
+    setModalVisible(false);
+    // Refetch assignments after successfully creating one
+    await refetch();
+  };
+
   return (
     <Screen>
       <Header>
         <HeaderText>My Assignments</HeaderText>
+        <AddButton onPress={handleOpenModal} disabled={loadingCourses}>
+          <AddButtonText>+</AddButtonText>
+        </AddButton>
       </Header>
       <AgendaContent />
+      <AddAssignment
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSave={handleSaveAssignment}
+        courses={courses}
+      />
     </Screen>
   );
 }
@@ -147,14 +193,33 @@ function TimelineSection({ item }: { item: TimelineItem }) {
 const Header = styled.View`
   height: ${windowHeight * 0.1}px;
   background-color: ${colors.background};
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: row;
   padding-left: ${windowWidth * 0.05}px;
+  padding-right: ${windowWidth * 0.05}px;
 `;
 
 const HeaderText = styled.Text`
   font-size: ${windowHeight * 0.04}px;
   font-weight: bold;
   color: ${colors.accentColor};
+`;
+
+const AddButton = styled.TouchableOpacity<{ disabled: boolean }>`
+  width: ${windowHeight * 0.05}px;
+  height: ${windowHeight * 0.05}px;
+  border-radius: ${windowHeight * 0.025}px;
+  background-color: ${({ disabled }) =>
+    disabled ? colors.textSecondary : colors.accentColor};
+  justify-content: center;
+  align-items: center;
+`;
+
+const AddButtonText = styled.Text`
+  font-size: ${windowHeight * 0.035}px;
+  color: ${colors.background};
+  font-weight: bold;
 `;
 
 const ErrorText = styled.Text`
