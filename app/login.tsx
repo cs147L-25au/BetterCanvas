@@ -21,7 +21,7 @@ export default function LoginScreen() {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const router = useRouter();
 
-  // Animate logo continuously - pulse only
+  // Animate logo pulse
   useEffect(() => {
     const pulseAnimation = Animated.loop(
       Animated.sequence([
