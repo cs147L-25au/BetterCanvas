@@ -1,18 +1,30 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+
 
 import { useRouter } from "expo-router";
-import { Alert, Dimensions } from "react-native";
+import { FlatList, TouchableOpacity, Dimensions, Alert } from "react-native";
 import { styled } from "styled-components/native";
 
-import { colors } from "@/assets/Themes/colors";
+
+import { colors, lightToDarkColorMap } from "@/assets/Themes/colors";
+import { CourseAssignmentsModal } from "@/components/CourseAssignmentsModal";
 import { Screen } from "@/components/Screen";
 import { signOut } from "@/utils/auth";
+import { fetchUserCourses, type Course } from "@/utils/supabaseQueries";
 
 const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
+const SQUARE_SIZE = windowWidth * 0.4;
 
 export default function CoursesScreen() {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    fetchUserCourses().then(setCourses);
+  }, []);
 
   async function handleLogout() {
     const { error } = await signOut();
@@ -23,12 +35,49 @@ export default function CoursesScreen() {
     }
   }
 
+  // Group courses into rows of 2
+  const rows = [];
+  for (let i = 0; i < courses.length; i += 2) {
+    rows.push(courses.slice(i, i + 2));
+  }
+
   return (
     <Screen>
       <Header>
-        <HeaderText>My Profile</HeaderText>
+        <HeaderText>My Courses</HeaderText>
       </Header>
       <Content>
+        <FlatList
+          data={rows}
+          keyExtractor={(_, idx) => idx.toString()}
+          renderItem={({ item: row }) => (
+            <Row>
+              {row.map((course) => (
+                <CourseSquare
+                  key={course.id}
+                  onPress={() => {
+                    setSelectedCourse(course);
+                    setModalVisible(true);
+                  }}
+                >
+                  <TopHalf color={lightToDarkColorMap[course.course_color]} />
+                  <BottomHalf color={course.course_color}>
+                    <CourseText>
+                      {course.course_number}: {course.course_name}
+                    </CourseText>
+                  </BottomHalf>
+                </CourseSquare>
+              ))}
+              {row.length < 2 && <CourseSquare style={{ opacity: 0 }} />}
+            </Row>
+          )}
+          contentContainerStyle={{ padding: 16 }}
+        />
+        <CourseAssignmentsModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          course={selectedCourse}
+        />
         <LogoutButton onPress={handleLogout}>
           <LogoutButtonText>Log Out</LogoutButtonText>
         </LogoutButton>
@@ -52,7 +101,7 @@ const HeaderText = styled.Text`
 
 const Content = styled.View`
   flex: 1;
-  padding: ${windowWidth * 0.05}px;
+  padding: ${windowWidth * 0.035}px;
 `;
 
 const LogoutButton = styled.Pressable`
@@ -60,11 +109,45 @@ const LogoutButton = styled.Pressable`
   padding: 15px;
   border-radius: 8px;
   align-items: center;
-  margin-top: 20px;
+  margin-bottom: ${windowHeight * 0.06}px;
 `;
 
 const LogoutButtonText = styled.Text`
   color: white;
   font-size: 16px;
   font-weight: 600;
+`;
+
+const Row = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: ${windowWidth * 0.04}px;
+`;
+
+const CourseSquare = styled(TouchableOpacity)`
+  width: ${SQUARE_SIZE}px;
+  height: ${SQUARE_SIZE}px;
+  border-radius: ${windowWidth * 0.04}px;
+  overflow: hidden;
+  margin-bottom: 0;
+`;
+
+const TopHalf = styled.View<{ color: string }>`
+  flex: 0.9;
+  background-color: ${({ color }) => color};
+`;
+
+const BottomHalf = styled.View<{ color: string }>`
+  flex: 1.1;
+  background-color: ${({ color }) => color};
+  justify-content: center;
+  align-items: center;
+`;
+
+const CourseText = styled.Text`
+  color: ${colors.textPrimary};
+  font-size: ${windowWidth * 0.035}px;
+  font-weight: bold;
+  text-align: center;
+  padding: ${windowWidth * 0.02}px;
 `;
