@@ -9,12 +9,7 @@ import { AgendaItem } from "@/components/agenda/AgendaItem";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Screen } from "@/components/Screen";
 import { useAssignments } from "@/hooks/useAssignments";
-import {
-  createAssignment,
-  fetchUserCourses,
-  type Course,
-  type Assignment,
-} from "@/utils/supabaseQueries";
+import { createAssignment, type Assignment } from "@/utils/supabaseQueries";
 import {
   createTimeline,
   findNearestAssgnIdx,
@@ -27,22 +22,14 @@ const ASSIGNMENTS_BATCH_SIZE = 7; // Load 7 past assignment dates at a time
 
 export default function AgendaScreen() {
   const [modalVisible, setModalVisible] = useState(false);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loadingCourses, setLoadingCourses] = useState(false);
-  const { assignments, loading, error, refetch } = useAssignments();
+  const { assignments, courses, loading, error, refetch } = useAssignments();
+  const [optimisticAssignments, setOptimisticAssignments] = useState<
+    Assignment[] | null
+  >(null);
 
-  // Load user's courses when modal opens
-  const handleOpenModal = async () => {
-    setLoadingCourses(true);
-    try {
-      const userCourses = await fetchUserCourses();
-      setCourses(userCourses);
-      setModalVisible(true);
-    } catch (err) {
-      console.error("Failed to load courses:", err);
-    } finally {
-      setLoadingCourses(false);
-    }
+  // Open modal directly, courses are already loaded
+  const handleOpenModal = () => {
+    setModalVisible(true);
   };
 
   const handleSaveAssignment = async (assignment: {
@@ -51,22 +38,29 @@ export default function AgendaScreen() {
     dueDate: Date;
     estimatedDuration: number;
   }) => {
-    await createAssignment(assignment);
+    // Create the assignment in the DB
+    const newAssignment = await createAssignment(assignment);
     setModalVisible(false);
-    // Refetch assignments after successfully creating one
-    await refetch();
+    // Optimistically add to the view
+    setOptimisticAssignments((prev) => [
+      newAssignment,
+      ...(prev ?? assignments),
+    ]);
+
+    // Refetch in the background to ensure data is up to date
+    refetch().then(() => setOptimisticAssignments(null));
   };
 
   return (
     <Screen>
       <Header>
         <HeaderText>My Assignments</HeaderText>
-        <AddButton onPress={handleOpenModal} disabled={loadingCourses}>
+        <AddButton onPress={handleOpenModal} disabled={loading}>
           <AddButtonText>+</AddButtonText>
         </AddButton>
       </Header>
       <AgendaContent
-        assignments={assignments}
+        assignments={optimisticAssignments ?? assignments}
         loading={loading}
         error={error}
         refetch={refetch}
@@ -85,6 +79,7 @@ function AgendaContent({
   assignments,
   loading,
   error,
+  refetch,
 }: {
   assignments: Assignment[];
   loading: boolean;
@@ -159,7 +154,8 @@ function AgendaContent({
     }
   };
 
-  if (loading || displayStartIndex === null) {
+  // Only show spinner if loading and there are no assignments to display
+  if ((loading || displayStartIndex === null) && assignments.length === 0) {
     return <LoadingSpinner size="large" style={{ marginTop: 50 }} />;
   }
 

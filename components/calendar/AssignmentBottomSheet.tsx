@@ -6,7 +6,7 @@ import BottomSheet, {
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { Dimensions } from "react-native";
-import styled from "styled-components/native";
+import { styled } from "styled-components/native";
 
 import { AgendaItem } from "@/components/agenda/AgendaItem";
 import { type Assignment } from "@/utils/supabaseQueries";
