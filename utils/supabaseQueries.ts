@@ -4,9 +4,9 @@ import type { Database } from "@/types/database";
 
 export type Course = {
   id: string;
-  course_name: string;
-  course_number: string;
-  course_color: string;
+  courseName: string;
+  courseNumber: string;
+  courseColor: string;
 };
 
 export type Assignment = {
@@ -14,23 +14,8 @@ export type Assignment = {
   assignmentName: string;
   dueDate: string;
   estimatedDuration: number;
-  course: {
-    courseName: string;
-    courseColor: string;
-  };
+  course: Course;
 };
-
-// Return type:
-// type SupabaseAssignmentReturn = {
-//   id: string;
-//   assignment_name: string;
-//   due_date: string;
-//   estimated_duration: number;
-//   course: {
-//     course_name: string;
-//     course_color: string;
-//   } | null;
-// };
 
 type SupabaseAssignmentReturn = Omit<
   Database["public"]["Tables"]["assignments"]["Row"],
@@ -38,7 +23,7 @@ type SupabaseAssignmentReturn = Omit<
 > & {
   course: Pick<
     Database["public"]["Tables"]["courses"]["Row"],
-    "course_name" | "course_color"
+    "id" | "course_name" | "course_number" | "course_color"
   > | null;
 };
 
@@ -69,7 +54,7 @@ export async function fetchAssignments(): Promise<Assignment[]> {
         assignment_name,
         due_date,
         estimated_duration,
-        course:courses(course_name, course_color),
+        course:courses(id, course_name, course_number, course_color),
         user_id
       `,
       )
@@ -92,7 +77,9 @@ export async function fetchAssignments(): Promise<Assignment[]> {
             dueDate: item.due_date,
             estimatedDuration: item.estimated_duration,
             course: {
+              id: item.course?.id || "",
               courseName: item.course?.course_name || "Unknown Course",
+              courseNumber: item.course?.course_number || "",
               courseColor: item.course?.course_color || colors.accentColor,
             },
           };
@@ -118,7 +105,12 @@ export async function fetchCourses(): Promise<Course[]> {
       throw error;
     }
 
-    return data || [];
+    return (data || []).map((course) => ({
+      id: course.id,
+      courseName: course.course_name,
+      courseNumber: course.course_number,
+      courseColor: course.course_color,
+    }));
   } catch (err) {
     console.log(err);
     throw new Error("Failed to fetch courses");
@@ -150,7 +142,24 @@ export async function fetchUserCourses(): Promise<Course[]> {
 
     // Extract and flatten the course data
     const courses = (data || [])
-      .map((uc: { courses: Course | null }) => uc.courses)
+      .map(
+        (uc: {
+          courses: {
+            id: string;
+            course_name: string;
+            course_number: string;
+            course_color: string;
+          } | null;
+        }) =>
+          uc.courses
+            ? {
+                id: uc.courses.id,
+                courseName: uc.courses.course_name,
+                courseNumber: uc.courses.course_number,
+                courseColor: uc.courses.course_color,
+              }
+            : null,
+      )
       .filter(Boolean) as Course[];
 
     return courses;
@@ -192,7 +201,7 @@ export async function createAssignment(assignment: {
         assignment_name,
         due_date,
         estimated_duration,
-        course:courses(course_name, course_color)
+        course:courses(id, course_name, course_number, course_color)
       `,
       )
       .single();
@@ -208,7 +217,9 @@ export async function createAssignment(assignment: {
       dueDate: data.due_date,
       estimatedDuration: data.estimated_duration,
       course: {
+        id: data.course?.id || "",
         courseName: data.course?.course_name || "Unknown Course",
+        courseNumber: data.course?.course_number || "",
         courseColor: data.course?.course_color || colors.accentColor,
       },
     };

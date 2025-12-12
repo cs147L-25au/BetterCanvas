@@ -38,14 +38,22 @@ export default function AgendaScreen() {
     dueDate: Date;
     estimatedDuration: number;
   }) => {
-    // Create the assignment in the DB
-    const newAssignment = await createAssignment(assignment);
-    setModalVisible(false);
-    // Optimistically add to the view
+    // Optimistically add to the view BEFORE any await
+    const optimisticAssignment: Assignment = {
+      id: Math.random().toString(36).slice(2), // temporary id
+      assignmentName: assignment.assignmentName,
+      dueDate: assignment.dueDate.toISOString(),
+      estimatedDuration: assignment.estimatedDuration,
+      course: courses.find((c) => c.id === assignment.courseId) ?? courses[0],
+    };
     setOptimisticAssignments((prev) => [
-      newAssignment,
+      optimisticAssignment,
       ...(prev ?? assignments),
     ]);
+
+    // Create the assignment in the DB
+    await createAssignment(assignment);
+    setModalVisible(false);
 
     // Refetch in the background to ensure data is up to date
     refetch().then(() => setOptimisticAssignments(null));

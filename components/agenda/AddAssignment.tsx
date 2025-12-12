@@ -7,6 +7,7 @@ import { Dimensions, Modal, Platform, ScrollView } from "react-native";
 import { styled } from "styled-components/native";
 
 import { colors, lightToDarkColorMap } from "@/assets/Themes/colors";
+import { getTimeStringFromDate } from "@/utils/dateUtils";
 import type { Course } from "@/utils/supabaseQueries";
 
 const windowWidth = Dimensions.get("window").width;
@@ -39,9 +40,37 @@ export function AddAssignment({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // When courses change, default to first course if none selected or if previous selection is not in the list
+  React.useEffect(() => {
+    if (courses.length === 0) {
+      return;
+    }
+
+    // If no selection or selection is not in the new courses list, select the first
+    if (
+      !selectedCourseId ||
+      !courses.some((course) => course.id === selectedCourseId)
+    ) {
+      setSelectedCourseId(courses[0].id);
+    }
+    // Otherwise, keep the previous selection
+  }, [courses, selectedCourseId]);
+
   const resetForm = () => {
     setAssignmentName("");
-    setSelectedCourseId("");
+    // Keep the last selected course if still available, otherwise default to first course
+    setSelectedCourseId((prev) => {
+      if (courses.length === 0) {
+        return "";
+      }
+
+      if (prev && courses.some((c) => c.id === prev)) {
+        return prev;
+      }
+
+      return courses[0].id;
+    });
+
     setDueDate(new Date());
     setEstimatedDuration("");
     setError(null);
@@ -128,14 +157,6 @@ export function AddAssignment({
     setShowTimePicker((prev) => !prev);
   };
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
   return (
     <Modal
       visible={visible}
@@ -180,10 +201,10 @@ export function AddAssignment({
                     key={course.id}
                     selected={selectedCourseId === course.id}
                     onPress={() => setSelectedCourseId(course.id)}
-                    color={lightToDarkColorMap[course.course_color]}
+                    color={lightToDarkColorMap[course.courseColor]}
                   >
                     <CourseChipText selected={selectedCourseId === course.id}>
-                      {course.course_number}
+                      {course.courseNumber}
                     </CourseChipText>
                   </CourseChip>
                 ))}
@@ -204,7 +225,9 @@ export function AddAssignment({
                   </DateButtonText>
                 </DateButton>
                 <TimeButton onPress={handleTimeButtonPress}>
-                  <DateButtonText>{formatTime(dueDate)}</DateButtonText>
+                  <DateButtonText>
+                    {getTimeStringFromDate(dueDate)}
+                  </DateButtonText>
                 </TimeButton>
               </DateTimeRow>
               {showDatePicker && (
