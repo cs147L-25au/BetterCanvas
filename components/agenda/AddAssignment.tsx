@@ -119,6 +119,7 @@ export function AddAssignment({
     }
   };
 
+  // TODO: Combine onDateChange and onTimeChange into one function
   const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     if (Platform.OS === "android") {
       setShowDatePicker(false);
@@ -255,6 +256,7 @@ export function AddAssignment({
             </FormSection>
 
             <FormSection>
+              {/* Todo: Add support for a slider for five minute intervals */}
               <Label>Estimated Duration (hours)</Label>
               <Input
                 value={estimatedDuration}
