@@ -25,5 +25,28 @@ export function useCalendarEvents(assignments: Assignment[]) {
     setEvents((prev) => prev.filter((event) => event.id !== eventId));
   };
 
-  return { events, addEvent, removeEvent };
+  // updates an existing event's times
+  const updateEvent = (
+    eventId: string,
+    start: string,
+    end: string,
+  ): EventItem | undefined => {
+    let updatedEvent: EventItem | undefined;
+    setEvents((prev) =>
+      prev.map((event) => {
+        if (event.id === eventId) {
+          updatedEvent = {
+            ...event,
+            start: { dateTime: start },
+            end: { dateTime: end },
+          };
+          return updatedEvent;
+        }
+        return event;
+      }),
+    );
+    return updatedEvent;
+  };
+
+  return { events, addEvent, removeEvent, updateEvent };
 }
