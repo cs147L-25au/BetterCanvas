@@ -5,6 +5,7 @@ import { styled } from "styled-components/native";
 
 import { colors, lightToDarkColorMap } from "@/assets/Themes/colors";
 import { AgendaItem } from "@/components/agenda/AgendaItem";
+import { optimisticUpdateChecked } from "@/utils/supabaseQueries";
 import { type Course, type Assignment } from "@/utils/supabaseQueries";
 
 const windowHeight = Dimensions.get("window").height;
@@ -28,9 +29,25 @@ export const CourseAssignmentsModal: React.FC<CourseAssignmentsModalProps> = ({
   error,
 }) => {
   // Filter assignments for the selected course
+  const [localAssignments, setLocalAssignments] = React.useState(assignments);
+  React.useEffect(() => {
+    setLocalAssignments(assignments);
+  }, [assignments]);
+
   const filteredAssignments = course
-    ? assignments.filter((a) => a.course.courseName === course.courseName)
+    ? localAssignments.filter((a) => a.course.courseName === course.courseName)
     : [];
+
+  const handleCheckedChange = async (
+    assignmentId: string,
+    checked: boolean,
+  ) => {
+    try {
+      await optimisticUpdateChecked(assignmentId, checked, setLocalAssignments);
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   return (
     <Modal
@@ -64,10 +81,13 @@ export const CourseAssignmentsModal: React.FC<CourseAssignmentsModalProps> = ({
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                   <AgendaItem
+                    assignmentId={item.id}
                     assignmentName={item.assignmentName}
                     courseName={course?.courseName || ""}
                     dueDate={item.dueDate}
                     courseColor={course?.courseColor || colors.accentColor}
+                    checked={item.checked}
+                    onPress={() => handleCheckedChange(item.id, !item.checked)}
                   />
                 )}
                 contentContainerStyle={{ paddingBottom: 16 }}
@@ -84,7 +104,7 @@ const AssignmentsContainer = styled.View`
   width: 100%;
   padding: 0 8px;
   flex-grow: 1;
-  max-height: ${windowHeight * 0.8}px;
+  max-height: ${windowHeight * 0.6}px;
 `;
 
 const ModalBackground = styled.View`
@@ -109,6 +129,7 @@ const HeaderContainer = styled.View`
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: ${windowHeight * 0.02}px;
+  padding-bottom: ${windowHeight * 0.01}px;
 `;
 
 const Header = styled.Text<{ course: Course | null }>`
@@ -119,6 +140,7 @@ const Header = styled.Text<{ course: Course | null }>`
     course ? lightToDarkColorMap[course.courseColor] : colors.accentColor};
   text-align: center;
   padding-right: ${windowWidth * 0.08}px;
+  padding-top: ${windowWidth * 0.013}px;
 `;
 
 const EmptyState = styled.Text`

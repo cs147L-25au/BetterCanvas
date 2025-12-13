@@ -5,6 +5,7 @@ import { Dimensions } from "react-native";
 import { styled } from "styled-components/native";
 
 import { colors, lightToDarkColorMap } from "@/assets/Themes/colors";
+import { updateUserAssignmentChecked } from "@/utils/supabaseQueries";
 
 const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
@@ -15,31 +16,48 @@ const noop = () => {
 };
 
 type AgendaItemProps = {
+  assignmentId: string;
   assignmentName: string;
   courseName: string;
   dueDate: string;
   courseColor: string;
+  checked?: boolean;
   onPress?: () => void;
   compact?: boolean;
 };
 
 export function AgendaItem({
+  assignmentId,
   assignmentName,
   courseName,
   dueDate,
   courseColor,
+  checked = false,
   onPress = noop,
   compact = false,
 }: AgendaItemProps) {
-  const [isChecked, setIsChecked] = useState(false);
+  const [isChecked, setIsChecked] = useState(checked);
+
+  // Keep isChecked in sync with checked prop
+  React.useEffect(() => {
+    setIsChecked(checked);
+  }, [checked]);
 
   const formattedTime = new Date(dueDate).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
   });
 
-  const handleCheckboxPress = () => {
-    setIsChecked(!isChecked);
+  const handleCheckboxPress = async () => {
+    const newChecked = !isChecked;
+    setIsChecked(newChecked);
+    try {
+      await updateUserAssignmentChecked(assignmentId, newChecked);
+    } catch (err) {
+      // Optionally handle error (e.g., revert UI, show message)
+      setIsChecked(!newChecked);
+      console.log(err);
+    }
   };
 
   return (

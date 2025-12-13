@@ -15,6 +15,7 @@ export type Assignment = {
   dueDate: string;
   estimatedDuration: number;
   course: Course;
+  checked?: boolean;
 };
 
 type SupabaseAssignmentReturn = Omit<
@@ -46,7 +47,7 @@ export async function fetchAssignments(): Promise<Assignment[]> {
     }
 
     // Fetch assignments for user's courses: global (user_id is null) or user-specific (user_id = user.id)
-    const { data, error } = await supabase
+    const { data: assignmentsData, error: assignmentsError } = await supabase
       .from("assignments")
       .select(
         `
@@ -62,20 +63,43 @@ export async function fetchAssignments(): Promise<Assignment[]> {
       .or(`user_id.is.null,user_id.eq.${user.id}`)
       .order("due_date", { ascending: true });
 
-    if (error) {
-      throw new Error(error.message);
+    if (assignmentsError) {
+      throw new Error(assignmentsError.message);
+    }
+
+    // Fetch user_assignments for checked state
+
+    const { data: userAssignmentsData, error: userAssignmentsError } =
+      await supabase
+        .from("user_assignments")
+        .select("assignment_id, checked")
+        .eq("user_id", user.id);
+
+    if (userAssignmentsError) {
+      throw new Error(userAssignmentsError.message);
+    }
+
+    // Map assignment_id to is_checked for quick lookup
+    const checkedMap: Record<string, boolean> = {};
+    if (Array.isArray(userAssignmentsData)) {
+      userAssignmentsData.forEach((ua) => {
+        checkedMap[ua.assignment_id] = ua.checked;
+      });
     }
 
     // Map data to Assignment type
-    const result = Array.isArray(data)
+    const result = Array.isArray(assignmentsData)
       ? (
-          data as (SupabaseAssignmentReturn & { user_id?: string | null })[]
+          assignmentsData as (SupabaseAssignmentReturn & {
+            user_id?: string | null;
+          })[]
         ).map((item) => {
           return {
             id: item.id,
             assignmentName: item.assignment_name,
             dueDate: item.due_date,
             estimatedDuration: item.estimated_duration,
+            checked: checkedMap[item.id] ?? false,
             course: {
               id: item.course?.id || "",
               courseName: item.course?.course_name || "Unknown Course",
@@ -226,5 +250,56 @@ export async function createAssignment(assignment: {
   } catch (err) {
     console.log(err);
     throw new Error("Failed to create assignment");
+  }
+}
+
+// Updates or inserts the checked state for a user's assignment
+export async function updateUserAssignmentChecked(
+  assignmentId: string,
+  checked: boolean,
+): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  // Upsert the checked state for this user and assignment
+  const { error } = await supabase.from("user_assignments").upsert(
+    [
+      {
+        user_id: user.id,
+        assignment_id: assignmentId,
+        checked,
+      },
+    ],
+    { onConflict: "user_id,assignment_id", defaultToNull: false },
+  );
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+// Optimistically update checked state for an assignment in a local array, update DB, and revert on error
+export async function optimisticUpdateChecked(
+  assignmentId: string,
+  checked: boolean,
+  setAssignments: React.Dispatch<React.SetStateAction<Assignment[]>>,
+): Promise<void> {
+  setAssignments((prev) =>
+    prev.map((a) => (a.id === assignmentId ? { ...a, checked } : a)),
+  );
+
+  try {
+    await updateUserAssignmentChecked(assignmentId, checked);
+  } catch (err) {
+    setAssignments((prev) =>
+      prev.map((a) =>
+        a.id === assignmentId ? { ...a, checked: !checked } : a,
+      ),
+    );
+
+    throw err;
   }
 }

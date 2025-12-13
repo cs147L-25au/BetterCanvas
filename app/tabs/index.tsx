@@ -9,6 +9,7 @@ import { AgendaItem } from "@/components/agenda/AgendaItem";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Screen } from "@/components/Screen";
 import { useAssignments } from "@/hooks/useAssignments";
+import { optimisticUpdateChecked } from "@/utils/supabaseQueries";
 import { createAssignment, type Assignment } from "@/utils/supabaseQueries";
 import {
   createTimeline,
@@ -192,16 +193,35 @@ function AgendaContent({
 }
 
 function TimelineSection({ item }: { item: TimelineItem }) {
+  const [localAssignments, setLocalAssignments] = React.useState(
+    item.assignments,
+  );
+  React.useEffect(() => {
+    setLocalAssignments(item.assignments);
+  }, [item.assignments]);
+
+  const handleCheckedChange = async (
+    assignmentId: string,
+    checked: boolean,
+  ) => {
+    await optimisticUpdateChecked(assignmentId, checked, setLocalAssignments);
+  };
+
   return (
     <DateSection>
       <DateHeader>{item.label}</DateHeader>
-      {item.assignments.map((assignment) => (
+      {localAssignments.map((assignment) => (
         <AgendaItem
           key={assignment.id}
+          assignmentId={assignment.id}
           assignmentName={assignment.assignmentName}
           courseName={assignment.course.courseName}
           dueDate={assignment.dueDate}
           courseColor={assignment.course.courseColor}
+          checked={assignment.checked}
+          onPress={() =>
+            handleCheckedChange(assignment.id, !assignment.checked)
+          }
         />
       ))}
     </DateSection>

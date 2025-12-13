@@ -90,6 +90,42 @@ export interface Database {
           },
         ];
       };
+      user_assignments: {
+        Row: {
+          id: string;
+          user_id: string;
+          assignment_id: string;
+          checked: boolean;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          assignment_id: string;
+          checked: boolean;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          assignment_id?: string;
+          checked?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_assignments_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "assignments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_assignments_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
