@@ -2,7 +2,7 @@ import { useState, type RefObject } from "react";
 
 import { type CalendarKitHandle, type EventItem } from "@howljs/calendar-kit";
 
-import { createAssgnEvent } from "@/utils/calendarUtils";
+import { createAssgnEvent, TIME_BLOCK_PREFIX } from "@/utils/calendarUtils";
 import { type Assignment } from "@/utils/supabaseQueries";
 
 /**
@@ -17,6 +17,8 @@ export function useAssignmentSelection(
   const [selectedAssgnEvent, setSelectedAssgnEvent] = useState<
     EventItem | undefined
   >();
+  // tracks whether user has dragged the event to a new time
+  const [wasDragged, setWasDragged] = useState(false);
 
   function selectAssignment(assignment: Assignment) {
     const event = createAssgnEvent(assignment);
@@ -38,27 +40,56 @@ export function useAssignmentSelection(
     addEvent(event);
     // selects assignment event on calendar for dragging
     setSelectedAssgnEvent(event);
+    // reset drag state for new selection
+    setWasDragged(false);
+  }
+
+  function markAsDragged() {
+    setWasDragged(true);
+  }
+
+  function updateSelectedEvent(event: EventItem) {
+    setSelectedAssgnEvent(event);
+  }
+
+  // selects an existing event on the calendar for editing (e.g., from long press)
+  function selectExistingEvent(event: EventItem) {
+    setSelectedAssgnEvent(event);
+    // existing events should be kept on calendar
+    setWasDragged(true);
+    // clear any assignment selection since we're just editing the event
+    setSelectedAssgn(undefined);
   }
 
   function clearSelection() {
-    // TODO(Kelly): conditionally remove assignment event from calendar e.g. if
-    //              user attempted to drag it, we'll save it on the calendar as
-    //              as a true time block event and only unselect
-
-    // removes assignment event from calendar
     if (selectedAssgn) {
-      removeEvent(selectedAssgn.id);
+      if (wasDragged) {
+        // keep the event on calendar as a time block, just deselect it
+        setSelectedAssgnEvent(undefined);
+      } else {
+        // user didn't drag, remove the event from calendar
+        removeEvent(`${TIME_BLOCK_PREFIX}${selectedAssgn.id}`);
+        setSelectedAssgnEvent(undefined);
+      }
+    } else if (selectedAssgnEvent) {
+      // event was selected via long press (no associated assignment)
+      // just deselect it, keep it on the calendar
       setSelectedAssgnEvent(undefined);
     }
 
     // clears assignment details from bottom sheet
     setSelectedAssgn(undefined);
+    setWasDragged(false);
   }
 
   return {
     selectedAssgn,
     selectedAssgnEvent,
+    wasDragged,
     selectAssignment,
+    selectExistingEvent,
     clearSelection,
+    markAsDragged,
+    updateSelectedEvent,
   };
 }

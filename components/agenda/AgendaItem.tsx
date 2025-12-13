@@ -67,13 +67,15 @@ export function AgendaItem({
       onPress={onPress}
     >
       <ContentWrapper>
-        <CheckboxButton onPress={handleCheckboxPress}>
-          <Ionicons
-            name={isChecked ? "checkbox" : "square-outline"}
-            size={windowWidth * 0.065}
-            color={lightToDarkColorMap[courseColor]}
-          />
-        </CheckboxButton>
+        {compact ? null : (
+          <CheckboxButton onPress={handleCheckboxPress}>
+            <Ionicons
+              name={isChecked ? "checkbox" : "square-outline"}
+              size={windowWidth * 0.065}
+              color={lightToDarkColorMap[courseColor]}
+            />
+          </CheckboxButton>
+        )}
         <TextContent>
           <TopRow>
             <AssignmentName isChecked={isChecked}>
@@ -81,11 +83,9 @@ export function AgendaItem({
             </AssignmentName>
             <DueTime>{formattedTime}</DueTime>
           </TopRow>
-          {compact ? null : (
-            <BottomRow>
-              <CourseName courseColor={courseColor}>{courseName}</CourseName>
-            </BottomRow>
-          )}
+          <BottomRow>
+            <CourseName courseColor={courseColor}>{courseName}</CourseName>
+          </BottomRow>
         </TextContent>
       </ContentWrapper>
     </Container>
