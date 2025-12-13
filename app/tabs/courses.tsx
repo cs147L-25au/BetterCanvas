@@ -101,7 +101,6 @@ export default function CoursesScreen() {
 
 const Header = styled.View`
   height: ${windowHeight * 0.1}px;
-  background-color: ${colors.background};
   justify-content: center;
   padding-left: ${windowWidth * 0.05}px;
 `;
@@ -122,7 +121,7 @@ const LogoutButton = styled.Pressable`
   padding: 15px;
   border-radius: 8px;
   align-items: center;
-  margin-bottom: ${windowHeight * 0.06}px;
+  margin-bottom: ${windowHeight * 0.08}px;
 `;
 
 const LogoutButtonText = styled.Text`
