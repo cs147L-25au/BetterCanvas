@@ -111,9 +111,9 @@ export default function CourseSelectionScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <CourseItem
-            courseName={item.course_name}
-            courseNumber={item.course_number}
-            courseColor={item.course_color}
+            courseName={item.courseName}
+            courseNumber={item.courseNumber}
+            courseColor={item.courseColor}
             isSelected={selectedCourses.has(item.id)}
             onPress={() => toggleCourse(item.id)}
           />
