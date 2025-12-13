@@ -1,30 +1,34 @@
-import React, { useEffect, useState } from "react";
-
+import React, { useState } from "react";
 
 import { useRouter } from "expo-router";
 import { FlatList, TouchableOpacity, Dimensions, Alert } from "react-native";
 import { styled } from "styled-components/native";
 
-
 import { colors, lightToDarkColorMap } from "@/assets/Themes/colors";
-import { CourseAssignmentsModal } from "@/components/CourseAssignmentsModal";
+import { CourseAssignmentsModal } from "@/components/CourseAssignmentModal";
 import { Screen } from "@/components/Screen";
+import { useAssignments } from "@/hooks/useAssignments";
 import { signOut } from "@/utils/auth";
-import { fetchUserCourses, type Course } from "@/utils/supabaseQueries";
+import { type Course } from "@/utils/supabaseQueries";
 
 const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
 const SQUARE_SIZE = windowWidth * 0.4;
 
 export default function CoursesScreen() {
-  const [courses, setCourses] = useState<Course[]>([]);
+  // Use courses from useAssignments
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    fetchUserCourses().then(setCourses);
-  }, []);
+  const {
+    courses,
+    loading: assignmentsLoading,
+    error: assignmentsError,
+  } = useAssignments();
+  const useAssignmentsData = useAssignments();
+
+  // No need to fetchUserCourses, handled by useAssignments
 
   async function handleLogout() {
     const { error } = await signOut();
@@ -47,36 +51,45 @@ export default function CoursesScreen() {
         <HeaderText>My Courses</HeaderText>
       </Header>
       <Content>
-        <FlatList
-          data={rows}
-          keyExtractor={(_, idx) => idx.toString()}
-          renderItem={({ item: row }) => (
-            <Row>
-              {row.map((course) => (
-                <CourseSquare
-                  key={course.id}
-                  onPress={() => {
-                    setSelectedCourse(course);
-                    setModalVisible(true);
-                  }}
-                >
-                  <TopHalf color={lightToDarkColorMap[course.course_color]} />
-                  <BottomHalf color={course.course_color}>
-                    <CourseText>
-                      {course.course_number}: {course.course_name}
-                    </CourseText>
-                  </BottomHalf>
-                </CourseSquare>
-              ))}
-              {row.length < 2 && <CourseSquare style={{ opacity: 0 }} />}
-            </Row>
-          )}
-          contentContainerStyle={{ padding: 16 }}
-        />
+        {assignmentsLoading ? (
+          <HeaderText>Loading...</HeaderText>
+        ) : assignmentsError ? (
+          <HeaderText>{assignmentsError}</HeaderText>
+        ) : (
+          <FlatList
+            data={rows}
+            keyExtractor={(_, idx) => idx.toString()}
+            renderItem={({ item: row }) => (
+              <Row>
+                {row.map((course) => (
+                  <CourseSquare
+                    key={course.id}
+                    onPress={() => {
+                      setSelectedCourse(course);
+                      setModalVisible(true);
+                    }}
+                  >
+                    <TopHalf color={lightToDarkColorMap[course.courseColor]} />
+                    <BottomHalf color={course.courseColor}>
+                      <CourseText>
+                        {course.courseNumber}: {course.courseName}
+                      </CourseText>
+                    </BottomHalf>
+                  </CourseSquare>
+                ))}
+                {row.length < 2 && <CourseSquare style={{ opacity: 0 }} />}
+              </Row>
+            )}
+            contentContainerStyle={{ padding: 16 }}
+          />
+        )}
         <CourseAssignmentsModal
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
           course={selectedCourse}
+          assignments={useAssignmentsData.assignments}
+          loading={assignmentsLoading}
+          error={assignmentsError}
         />
         <LogoutButton onPress={handleLogout}>
           <LogoutButtonText>Log Out</LogoutButtonText>

@@ -4,7 +4,7 @@ import { Dimensions, FlatList } from "react-native";
 import { styled } from "styled-components/native";
 
 import { colors } from "@/assets/Themes/colors";
-import { AddAssignment } from "@/components/agenda/AddAssignment";
+import { AddAssignment } from "@/components/agenda/AddAssignmentModal";
 import { AgendaItem } from "@/components/agenda/AgendaItem";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Screen } from "@/components/Screen";
