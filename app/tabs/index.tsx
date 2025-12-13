@@ -230,7 +230,6 @@ function TimelineSection({ item }: { item: TimelineItem }) {
 
 const Header = styled.View`
   height: ${windowHeight * 0.1}px;
-  background-color: ${colors.background};
   justify-content: space-between;
   align-items: center;
   flex-direction: row;
