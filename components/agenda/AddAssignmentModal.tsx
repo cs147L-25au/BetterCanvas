@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
+import Slider from "@react-native-community/slider";
 import { Dimensions, Modal, Platform, ScrollView } from "react-native";
 import { styled } from "styled-components/native";
 
@@ -35,6 +36,7 @@ export function AddAssignment({
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [dueDate, setDueDate] = useState(new Date());
   const [estimatedDuration, setEstimatedDuration] = useState("");
+  const [minuteValue, setMinuteValue] = useState(0); // 0-55 in steps of 5
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -73,6 +75,7 @@ export function AddAssignment({
 
     setDueDate(new Date());
     setEstimatedDuration("");
+    setMinuteValue(0);
     setError(null);
   };
 
@@ -93,10 +96,14 @@ export function AddAssignment({
       return;
     }
 
-    if (!estimatedDuration || Number(estimatedDuration) <= 0) {
+    const hours = Number(estimatedDuration);
+    if (!estimatedDuration || hours < 0) {
       setError("Please enter a valid duration (in hours)");
       return;
     }
+
+    // Calculate total duration as float
+    const totalDuration = hours + minuteValue / 60;
 
     setSaving(true);
     setError(null);
@@ -106,7 +113,7 @@ export function AddAssignment({
         assignmentName: assignmentName.trim(),
         courseId: selectedCourseId,
         dueDate,
-        estimatedDuration: Number(estimatedDuration),
+        estimatedDuration: totalDuration,
       });
 
       handleClose();
@@ -256,15 +263,33 @@ export function AddAssignment({
             </FormSection>
 
             <FormSection>
-              {/* Todo: Add support for a slider for five minute intervals */}
-              <Label>Estimated Duration (hours)</Label>
+              <Label>Estimated Duration</Label>
+              <SubHeader>Hours</SubHeader>
               <Input
                 value={estimatedDuration}
                 onChangeText={setEstimatedDuration}
                 placeholder="e.g., 2.5"
                 placeholderTextColor={colors.textSecondary}
                 keyboardType="decimal-pad"
+                style={{ marginBottom: windowHeight * 0.01 }}
               />
+              <SubHeader style={{ marginTop: windowHeight * 0.01 }}>
+                Minutes: {minuteValue}
+              </SubHeader>
+              <Slider
+                minimumValue={0}
+                maximumValue={55}
+                step={5}
+                value={minuteValue}
+                onValueChange={setMinuteValue}
+                style={{ width: "100%", height: 40 }}
+                minimumTrackTintColor={colors.accentColor}
+                maximumTrackTintColor={colors.backgroundSecondary}
+                thumbTintColor={colors.accentColor}
+              />
+              <SubHeader style={{ marginTop: 0 }}>
+                Total: {estimatedDuration || 0}h {minuteValue}m
+              </SubHeader>
             </FormSection>
 
             {error && <ErrorText>{error}</ErrorText>}
@@ -416,4 +441,11 @@ const PickerContainer = styled.View`
   border-radius: ${windowWidth * 0.02}px;
   padding: ${windowHeight * 0.01}px;
   align-items: center;
+`;
+
+const SubHeader = styled.Text`
+  font-size: ${windowHeight * 0.018}px;
+  font-weight: 500;
+  color: ${colors.textSecondary};
+  margin-bottom: ${windowHeight * 0.005}px;
 `;
