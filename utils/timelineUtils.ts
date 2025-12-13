@@ -23,6 +23,7 @@ function groupByDate(assignments: Assignment[]): Record<string, Assignment[]> {
     if (!assignmentsByDate[dateKey]) {
       assignmentsByDate[dateKey] = [];
     }
+
     assignmentsByDate[dateKey].push(assignment);
   }
 

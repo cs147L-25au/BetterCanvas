@@ -4,9 +4,9 @@ import type { Database } from "@/types/database";
 
 export type Course = {
   id: string;
-  course_name: string;
-  course_number: string;
-  course_color: string;
+  courseName: string;
+  courseNumber: string;
+  courseColor: string;
 };
 
 export type Assignment = {
@@ -14,23 +14,8 @@ export type Assignment = {
   assignmentName: string;
   dueDate: string;
   estimatedDuration: number;
-  course: {
-    courseName: string;
-    courseColor: string;
-  };
+  course: Course;
 };
-
-// Return type:
-// type SupabaseAssignmentReturn = {
-//   id: string;
-//   assignment_name: string;
-//   due_date: string;
-//   estimated_duration: number;
-//   course: {
-//     course_name: string;
-//     course_color: string;
-//   } | null;
-// };
 
 type SupabaseAssignmentReturn = Omit<
   Database["public"]["Tables"]["assignments"]["Row"],
@@ -38,39 +23,29 @@ type SupabaseAssignmentReturn = Omit<
 > & {
   course: Pick<
     Database["public"]["Tables"]["courses"]["Row"],
-    "course_name" | "course_color"
+    "id" | "course_name" | "course_number" | "course_color"
   > | null;
 };
 
 export async function fetchAssignments(): Promise<Assignment[]> {
   try {
-    // TODO hannah: if we need authentication in the future, move to helper
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
-
-    // Get user's enrolled courses
-    const { data: userCourses, error: coursesError } = await supabase
-      .from("user_courses")
-      .select("course_id")
-      .eq("user_id", user.id);
-
-    if (coursesError) {
-      throw coursesError;
-    }
-
-    const courseIds =
-      (userCourses as { course_id: string }[])?.map((uc) => uc.course_id) || [];
+    // Get user's enrolled courses using fetchUserCourses
+    const userCourses = await fetchUserCourses();
+    const courseIds = userCourses.map((course) => course.id);
 
     if (courseIds.length === 0) {
       return []; // No courses selected yet
     }
 
-    // Fetch assignments only for user's courses
+    // Get current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    // Fetch assignments for user's courses: global (user_id is null) or user-specific (user_id = user.id)
     const { data, error } = await supabase
       .from("assignments")
       .select(
@@ -79,10 +54,12 @@ export async function fetchAssignments(): Promise<Assignment[]> {
         assignment_name,
         due_date,
         estimated_duration,
-        course:courses(course_name, course_color)
+        course:courses(id, course_name, course_number, course_color),
+        user_id
       `,
       )
       .in("course_id", courseIds)
+      .or(`user_id.is.null,user_id.eq.${user.id}`)
       .order("due_date", { ascending: true });
 
     if (error) {
@@ -90,18 +67,24 @@ export async function fetchAssignments(): Promise<Assignment[]> {
     }
 
     // Map data to Assignment type
-    const result = (data || []).map((item: SupabaseAssignmentReturn) => {
-      return {
-        id: item.id,
-        assignmentName: item.assignment_name,
-        dueDate: item.due_date,
-        estimatedDuration: item.estimated_duration,
-        course: {
-          courseName: item.course?.course_name || "Unknown Course",
-          courseColor: item.course?.course_color || colors.accentColor,
-        },
-      };
-    });
+    const result = Array.isArray(data)
+      ? (
+          data as (SupabaseAssignmentReturn & { user_id?: string | null })[]
+        ).map((item) => {
+          return {
+            id: item.id,
+            assignmentName: item.assignment_name,
+            dueDate: item.due_date,
+            estimatedDuration: item.estimated_duration,
+            course: {
+              id: item.course?.id || "",
+              courseName: item.course?.course_name || "Unknown Course",
+              courseNumber: item.course?.course_number || "",
+              courseColor: item.course?.course_color || colors.accentColor,
+            },
+          };
+        })
+      : [];
 
     return result;
   } catch (err) {
@@ -122,9 +105,126 @@ export async function fetchCourses(): Promise<Course[]> {
       throw error;
     }
 
-    return data || [];
+    return (data || []).map((course) => ({
+      id: course.id,
+      courseName: course.course_name,
+      courseNumber: course.course_number,
+      courseColor: course.course_color,
+    }));
   } catch (err) {
     console.log(err);
     throw new Error("Failed to fetch courses");
+  }
+}
+
+// Fetches only the user's enrolled courses
+export async function fetchUserCourses(): Promise<Course[]> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get user's enrolled courses with full course details
+    const { data, error } = await supabase
+      .from("user_courses")
+      .select(
+        `course_id, courses(id, course_name, course_number, course_color)`,
+      )
+      .eq("user_id", user.id);
+
+    if (error) {
+      throw error;
+    }
+
+    // Extract and flatten the course data
+    const courses = (data || [])
+      .map(
+        (uc: {
+          courses: {
+            id: string;
+            course_name: string;
+            course_number: string;
+            course_color: string;
+          } | null;
+        }) =>
+          uc.courses
+            ? {
+                id: uc.courses.id,
+                courseName: uc.courses.course_name,
+                courseNumber: uc.courses.course_number,
+                courseColor: uc.courses.course_color,
+              }
+            : null,
+      )
+      .filter(Boolean) as Course[];
+
+    return courses;
+  } catch (err) {
+    console.log(err);
+    throw new Error("Failed to fetch user courses");
+  }
+}
+
+// Creates a new assignment
+export async function createAssignment(assignment: {
+  assignmentName: string;
+  courseId: string;
+  dueDate: Date;
+  estimatedDuration: number;
+}): Promise<Assignment> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    // Insert the assignment with user_id for custom assignments
+    const { data, error } = await supabase
+      .from("assignments")
+      .insert({
+        assignment_name: assignment.assignmentName,
+        course_id: assignment.courseId,
+        due_date: assignment.dueDate.toISOString(),
+        estimated_duration: assignment.estimatedDuration,
+        user_id: user.id, // always set user_id for custom assignments
+      })
+      .select(
+        `
+        id,
+        assignment_name,
+        due_date,
+        estimated_duration,
+        course:courses(id, course_name, course_number, course_color)
+      `,
+      )
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    // Map to Assignment type
+    return {
+      id: data.id,
+      assignmentName: data.assignment_name,
+      dueDate: data.due_date,
+      estimatedDuration: data.estimated_duration,
+      course: {
+        id: data.course?.id || "",
+        courseName: data.course?.course_name || "Unknown Course",
+        courseNumber: data.course?.course_number || "",
+        courseColor: data.course?.course_color || colors.accentColor,
+      },
+    };
+  } catch (err) {
+    console.log(err);
+    throw new Error("Failed to create assignment");
   }
 }

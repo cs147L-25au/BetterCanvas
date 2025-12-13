@@ -33,6 +33,7 @@ export interface Database {
           due_date: string;
           estimated_duration: number;
           created_at: string;
+          user_id: string;
         };
         Insert: {
           id?: string;
